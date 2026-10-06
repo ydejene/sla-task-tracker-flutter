@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="sla_task_tracker_flutter"
+        android:label="SLAtrix"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

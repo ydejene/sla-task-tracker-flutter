@@ -1,5 +1,5 @@
 name: sla_task_tracker_flutter
-description: "A new Flutter project."
+description: "SLAtrix - SLA-aware task tracking for small software teams."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -34,6 +34,9 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  sqflite: ^2.4.4+1
+  path: ^1.9.1
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +59,18 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  fonts:
+    - family: DM Sans
+      fonts:
+        - asset: assets/fonts/DMSans-400.ttf
+          weight: 400
+        - asset: assets/fonts/DMSans-500.ttf
+          weight: 500
+        - asset: assets/fonts/DMSans-600.ttf
+          weight: 600
+        - asset: assets/fonts/DMSans-700.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:
