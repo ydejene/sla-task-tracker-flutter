@@ -1,24 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'app_scope.dart';
+import 'controllers/task_controller.dart';
+import 'controllers/team_controller.dart';
+import 'screens/auth/user_selection_screen.dart';
+import 'theme/app_theme.dart';
+import 'utils/constants.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
+  runApp(
+    AppScope(
+      tasks: TaskController(),
+      team: TeamController(),
+      child: const SlatrixApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SlatrixApp extends StatelessWidget {
+  const SlatrixApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SLA Task Tracker',
+      title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: const Scaffold(
-        body: Center(child: Text('SLA Task Tracker Workspace Initialized')),
-      ),
+      theme: AppTheme.light,
+      home: const UserSelectionScreen(),
     );
   }
 }
