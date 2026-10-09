@@ -4,7 +4,7 @@ import 'task_colors.dart';
 
 enum AppButtonVariant { primary, secondary }
 
-/// Shared button: filled for the main action, white outlined for the
+/// Shared button: filled purple for the main action, white outlined for the
 /// secondary ones. A null onPressed disables it, and isLoading shows a spinner.
 class AppButton extends StatelessWidget {
   const AppButton({
@@ -24,57 +24,83 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
-    const textStyle = TextStyle(fontSize: 14, fontWeight: FontWeight.w700);
-    const padding = EdgeInsets.symmetric(horizontal: 12);
+    final isPrimary = variant == AppButtonVariant.primary;
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(11),
+    );
+    const textStyle = TextStyle(fontSize: 11, fontWeight: FontWeight.w700);
+    const padding = EdgeInsets.symmetric(horizontal: 14);
+    const minimumSize = Size(0, 42);
     final handler = isLoading ? null : onPressed;
 
     final Widget content = isLoading
-        ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
+        ? SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: isPrimary ? Colors.white : TaskColors.primary,
+            ),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 18),
+                Icon(icon, size: isPrimary ? 18 : 17),
                 const SizedBox(width: 6),
               ],
-              Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
             ],
           );
 
-    return SizedBox(
-      height: 52,
-      child: variant == AppButtonVariant.primary
-          ? FilledButton(
-              onPressed: handler,
-              style: FilledButton.styleFrom(
-                backgroundColor: scheme.primary,
-                foregroundColor: scheme.onPrimary,
-                shape: shape,
-                textStyle: textStyle,
-                padding: padding,
-                elevation: 0,
-              ),
-              child: content,
-            )
-          : OutlinedButton(
-              onPressed: handler,
-              style: OutlinedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: TaskColors.heading,
-                side: const BorderSide(color: TaskColors.buttonBorder),
-                shape: shape,
-                textStyle: textStyle,
-                padding: padding,
-              ),
-              child: content,
-            ),
+    if (isPrimary) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(11),
+          boxShadow: handler == null
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Color(0x386356D9), // primary @ 22%
+                    blurRadius: 12,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+        ),
+        child: FilledButton(
+          onPressed: handler,
+          style: FilledButton.styleFrom(
+            backgroundColor: TaskColors.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: TaskColors.primary.withAlpha(140),
+            disabledForegroundColor: Colors.white,
+            shape: shape,
+            textStyle: textStyle,
+            padding: padding,
+            minimumSize: minimumSize,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            elevation: 0,
+          ),
+          child: content,
+        ),
+      );
+    }
+
+    return OutlinedButton(
+      onPressed: handler,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: TaskColors.body,
+        disabledForegroundColor: TaskColors.body.withAlpha(120),
+        side: const BorderSide(color: TaskColors.buttonBorder),
+        shape: shape,
+        textStyle: textStyle,
+        padding: padding,
+        minimumSize: minimumSize,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: content,
     );
   }
 }

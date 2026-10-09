@@ -15,14 +15,14 @@ class PriorityBadge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.flag_outlined, size: 16, color: TaskColors.muted),
+        const Icon(Icons.flag_outlined, size: 14, color: TaskColors.cardDetail),
         const SizedBox(width: 4),
         Text(
           priority.value,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 9.5,
             fontWeight: FontWeight.w500,
-            color: TaskColors.muted,
+            color: TaskColors.cardDetail,
           ),
         ),
       ],

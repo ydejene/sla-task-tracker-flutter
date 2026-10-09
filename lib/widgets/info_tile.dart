@@ -18,35 +18,41 @@ class InfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: TaskColors.iconBackground,
-              borderRadius: BorderRadius.circular(10),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 67),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: TaskColors.iconBackground,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 17, color: TaskColors.primary),
             ),
-            child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 11, color: TaskColors.muted),
-                ),
-                const SizedBox(height: 4),
-                child,
-              ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: TaskColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  child,
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

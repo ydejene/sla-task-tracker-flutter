@@ -17,58 +17,79 @@ class ScreenHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const radius = BorderRadius.vertical(bottom: Radius.circular(20));
+    // Outer box is the 1px bottom border (a one-sided border cannot have
+    // rounded corners in Flutter), inner box is the lavender fill.
     return Container(
+      padding: const EdgeInsets.only(bottom: 1),
       decoration: const BoxDecoration(
-        color: TaskColors.headerBackground,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        color: TaskColors.headerBorder,
+        borderRadius: radius,
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-          child: Row(
-            children: [
-              Material(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: onBack,
-                  child: SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: Icon(
-                      Icons.chevron_left_rounded,
-                      size: 26,
-                      color: Theme.of(context).colorScheme.primary,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: TaskColors.headerBackground,
+          borderRadius: radius,
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(21, 12, 21, 20),
+            child: Row(
+              children: [
+                Material(
+                  color: TaskColors.headerButtonBackground,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: const BorderSide(color: TaskColors.headerBorder),
+                  ),
+                  child: InkWell(
+                    customBorder: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    onTap: onBack,
+                    child: const SizedBox(
+                      width: 37,
+                      height: 37,
+                      child: Icon(
+                        Icons.chevron_left_rounded,
+                        size: 24,
+                        color: TaskColors.primaryDeep,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: TaskColors.heading,
-                      ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        subtitle!,
-                        style: const TextStyle(fontSize: 13, color: TaskColors.body),
+                        title,
+                        style: const TextStyle(
+                          fontSize: 23,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.8,
+                          height: 1.2,
+                          color: TaskColors.heading,
+                        ),
                       ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 5),
+                        Text(
+                          subtitle!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.5,
+                            color: TaskColors.subtitle,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
