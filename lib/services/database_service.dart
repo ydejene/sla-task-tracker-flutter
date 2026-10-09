@@ -28,10 +28,13 @@ class DatabaseService {
       return await openDatabase(
         path,
         version: 1,
+        onConfigure: (db) async {
+          await db.execute('PRAGMA foreign_keys = ON');
+        },
         onCreate: _onCreate,
       );
     } catch (e) {
-      throw DatabaseException('Failed to initialize database: \${e.toString()}');
+      throw DatabaseException('Failed to initialize database: ${e.toString()}');
     }
   }
 
@@ -53,9 +56,9 @@ class DatabaseService {
         title TEXT NOT NULL,
         description TEXT NOT NULL DEFAULT '',
         assigned_to TEXT REFERENCES team_members(id) ON DELETE SET NULL,
-        priority TEXT NOT NULL DEFAULT 'Medium',
+        priority TEXT NOT NULL DEFAULT 'medium',
         deadline TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'Todo',
+        status TEXT NOT NULL DEFAULT 'todo',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         at_risk_at TEXT NOT NULL,
@@ -112,7 +115,7 @@ class DatabaseService {
       final results = await db.query('team_members');
       return results.map((e) => TeamMember.fromMap(e)).toList();
     } catch (e) {
-      throw DatabaseException('Failed to fetch team members: \${e.toString()}');
+      throw DatabaseException('Failed to fetch team members: ${e.toString()}');
     }
   }
 
@@ -130,7 +133,7 @@ class DatabaseService {
       }
       return null;
     } catch (e) {
-      throw DatabaseException('Failed to fetch team member with ID \$id: \${e.toString()}');
+      throw DatabaseException('Failed to fetch team member with ID $id: ${e.toString()}');
     }
   }
 
@@ -143,7 +146,7 @@ class DatabaseService {
       final results = await db.query('tasks', orderBy: 'created_at DESC');
       return results.map((e) => Task.fromMap(e)).toList();
     } catch (e) {
-      throw DatabaseException('Failed to fetch tasks: \${e.toString()}');
+      throw DatabaseException('Failed to fetch tasks: ${e.toString()}');
     }
   }
 
@@ -161,7 +164,7 @@ class DatabaseService {
       }
       return null;
     } catch (e) {
-      throw DatabaseException('Failed to fetch task with ID \$id: \${e.toString()}');
+      throw DatabaseException('Failed to fetch task with ID $id: ${e.toString()}');
     }
   }
 
@@ -170,7 +173,7 @@ class DatabaseService {
       final db = await database;
       await db.insert('tasks', task.toMap());
     } catch (e) {
-      throw DatabaseException('Failed to insert task: \${e.toString()}');
+      throw DatabaseException('Failed to insert task: ${e.toString()}');
     }
   }
 
@@ -184,7 +187,7 @@ class DatabaseService {
         whereArgs: [task.id],
       );
     } catch (e) {
-      throw DatabaseException('Failed to update task with ID \${task.id}: \${e.toString()}');
+      throw DatabaseException('Failed to update task with ID ${task.id}: ${e.toString()}');
     }
   }
 
@@ -197,7 +200,7 @@ class DatabaseService {
         whereArgs: [id],
       );
     } catch (e) {
-      throw DatabaseException('Failed to delete task with ID \$id: \${e.toString()}');
+      throw DatabaseException('Failed to delete task with ID $id: ${e.toString()}');
     }
   }
 }

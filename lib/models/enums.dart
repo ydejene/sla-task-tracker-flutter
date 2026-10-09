@@ -11,7 +11,7 @@ enum TaskPriority {
   // Helper method to convert from DB string to Enum
   static TaskPriority fromString(String val) {
     return TaskPriority.values.firstWhere(
-      (e) => e.value == val,
+      (e) => e.name == val || e.value == val,
       orElse: () => TaskPriority.medium,
     );
   }
@@ -29,7 +29,7 @@ enum TaskStatus {
   // Helper method to convert from DB string to Enum
   static TaskStatus fromString(String val) {
     return TaskStatus.values.firstWhere(
-      (e) => e.value == val,
+      (e) => e.name == val || e.value == val,
       orElse: () => TaskStatus.todo,
     );
   }

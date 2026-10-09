@@ -206,5 +206,82 @@ void main() {
         throwsA(isA<ValidationException>()),
       );
     });
+
+    test('T12: Starting a paused task fails (must use resume)', () async {
+      final task = await taskService.createTask(
+        title: 'Test', 
+        priority: TaskPriority.low, 
+        deadline: baseDeadline
+      );
+      await taskService.startTask(task.id);
+      await taskService.pauseTask(task.id);
+      
+      expect(() => taskService.startTask(task.id), throwsA(isA<TaskServiceException>()));
+    });
+
+    test('T13: Edit overdue task without changing deadline', () async {
+      final task = await taskService.createTask(
+        title: 'Test', 
+        priority: TaskPriority.low, 
+        deadline: baseDeadline
+      );
+      
+      mockNow = baseDeadline.add(const Duration(days: 1)); // Now overdue
+      expect(taskService.getSlaStatus(task, now: mockNow), equals(SlaStatus.overdue));
+
+      final updatedTask = await taskService.updateTaskFields(task.id, title: 'Updated Overdue');
+      expect(updatedTask.title, equals('Updated Overdue'));
+    });
+
+    test('T14: Reject past deadlines on creation', () async {
+      final pastDeadline = mockNow.subtract(const Duration(seconds: 1));
+      
+      expect(
+        () => taskService.createTask(
+          title: 'Test', 
+          priority: TaskPriority.low, 
+          deadline: pastDeadline
+        ),
+        throwsA(isA<ValidationException>())
+      );
+    });
+
+    test('T15: Reject empty title on creation and update', () async {
+      expect(
+        () => taskService.createTask(
+          title: '   ', 
+          priority: TaskPriority.low, 
+          deadline: baseDeadline
+        ),
+        throwsA(isA<ValidationException>())
+      );
+
+      final task = await taskService.createTask(
+        title: 'Valid', 
+        priority: TaskPriority.low, 
+        deadline: baseDeadline
+      );
+
+      expect(
+        () => taskService.updateTaskFields(task.id, title: ''),
+        throwsA(isA<ValidationException>())
+      );
+    });
+
+    test('T16: Cannot edit a completed task', () async {
+      final task = await taskService.createTask(
+        title: 'Test', 
+        priority: TaskPriority.low, 
+        deadline: baseDeadline
+      );
+      
+      await taskService.startTask(task.id);
+      await taskService.completeTask(task.id);
+
+      expect(
+        () => taskService.updateTaskFields(task.id, title: 'Nope'),
+        throwsA(isA<TaskServiceException>())
+      );
+    });
   });
 }
