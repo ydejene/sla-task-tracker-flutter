@@ -16,9 +16,10 @@ import '../widgets/screen_header.dart';
 import '../widgets/sla_badge.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/task_colors.dart';
+import 'task_form_screen.dart';
 
 /// Shows one task. Pops with true if anything changed (start, pause, resume,
-/// complete, and later edit) so the previous screen can reload its list.
+/// complete or edit) so the previous screen can reload its list.
 class TaskDetailsScreen extends StatefulWidget {
   const TaskDetailsScreen({super.key, required this.taskId});
 
@@ -81,6 +82,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   /// Runs a status action. The service decides if it is allowed and throws an
   /// AppException with a message if not, which is shown in a SnackBar.
   Future<void> _runAction(Future<Task> Function() action) async {
@@ -95,18 +100,26 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       });
     } on AppException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      _showMessage(e.message);
     } finally {
       if (mounted) setState(() => _isBusy = false);
     }
   }
 
-  void _onEdit() {
-    // Step two: open TaskFormScreen(task: _task) with Navigator.push<bool>.
-    // When it returns true, set _changed = true and call _load().
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('The edit form comes in the next step.')),
+  Future<void> _onEdit() async {
+    final task = _task;
+    if (task == null) return;
+    if (task.status == TaskStatus.completed) {
+      _showMessage('Completed tasks cannot be edited.');
+      return;
+    }
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => TaskFormScreen(task: task)),
     );
+    if (saved == true && mounted) {
+      _changed = true;
+      await _load();
+    }
   }
 
   @override
@@ -136,7 +149,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: TaskColors.primary, strokeWidth: 2.5),
+      );
     }
     final task = _task;
     if (_loadError != null || task == null) {
@@ -149,7 +164,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Text(
                 _loadError ?? 'Something went wrong.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: TaskColors.body),
+                style: const TextStyle(fontSize: 12, color: TaskColors.body),
               ),
               const SizedBox(height: 16),
               AppButton(label: 'Try again', onPressed: _load),
@@ -160,147 +175,144 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
 
     final sla = _service.getSlaStatus(task, now: DateTime.now());
-    final primary = Theme.of(context).colorScheme.primary;
     final assignee = _assignee;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      padding: const EdgeInsets.fromLTRB(21, 0, 21, 32),
       children: [
-        Text(
-          'TASK',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-            color: primary,
+        // Hero: overline, title and the status and SLA row (.detail-hero).
+        Padding(
+          padding: const EdgeInsets.fromLTRB(2, 24, 2, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'TASK',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: TaskColors.primary,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                task.title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.66,
+                  height: 1.25,
+                  color: TaskColors.heading,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: SlaBadge.softColorFor(sla),
+                  border: Border.all(color: SlaBadge.borderColorFor(sla)),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    StatusBadge(status: task.status),
+                    const SizedBox(width: 10),
+                    SlaBadge(status: sla),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          task.title,
-          style: const TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
-            color: TaskColors.heading,
-          ),
-        ),
-        const SizedBox(height: 14),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: SlaBadge.softColorFor(sla),
-              borderRadius: BorderRadius.circular(16),
-            ),
+        _Section(
+          title: 'Description',
+          child: AppCard(
+            padding: const EdgeInsets.all(15),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                StatusBadge(status: task.status),
-                const SizedBox(width: 8),
-                SlaBadge(status: sla),
+                const Padding(
+                  padding: EdgeInsets.only(top: 2),
+                  child: Icon(Icons.article_outlined, size: 18, color: TaskColors.primary),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Text(
+                    task.description.trim().isEmpty
+                        ? 'No description provided.'
+                        : task.description,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      height: 1.6,
+                      color: TaskColors.body,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 28),
-        const _SectionTitle('Description'),
-        const SizedBox(height: 10),
-        AppCard(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.notes_rounded, size: 20, color: primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  task.description.trim().isEmpty
-                      ? 'No description provided.'
-                      : task.description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.45,
-                    color: TaskColors.body,
+        _Section(
+          title: 'Task information',
+          child: AppCard(
+            child: Column(
+              children: [
+                _InfoRow(
+                  left: InfoTile(
+                    icon: Icons.person_outline_rounded,
+                    label: 'Assignee',
+                    child: assignee == null
+                        ? const _ValueText('Unassigned')
+                        : Row(
+                            children: [
+                              AssigneeAvatar(member: assignee),
+                              const SizedBox(width: 6),
+                              Expanded(child: _ValueText(assignee.name)),
+                            ],
+                          ),
+                  ),
+                  right: InfoTile(
+                    icon: Icons.flag_outlined,
+                    label: 'Priority',
+                    child: _ValueText(task.priority.value),
                   ),
                 ),
-              ),
-            ],
+                const _RowDivider(),
+                _InfoRow(
+                  left: InfoTile(
+                    icon: Icons.calendar_today_outlined,
+                    label: 'Deadline',
+                    child: _ValueText(formatDeadline(task.deadline)),
+                  ),
+                  right: InfoTile(
+                    icon: Icons.fact_check_outlined,
+                    label: 'Task Status',
+                    child: _ValueText(task.status.value),
+                  ),
+                ),
+                const _RowDivider(),
+                _InfoRow(
+                  left: InfoTile(
+                    icon: SlaBadge.iconFor(sla),
+                    label: 'SLA Status',
+                    child: SlaBadge(status: sla, compact: true),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 28),
-        const _SectionTitle('Task information'),
-        const SizedBox(height: 10),
-        AppCard(
-          child: Column(
-            children: [
-              _InfoRow(
-                left: InfoTile(
-                  icon: Icons.person_outline_rounded,
-                  label: 'Assignee',
-                  child: assignee == null
-                      ? const _ValueText('Unassigned')
-                      : Row(
-                          children: [
-                            AssigneeAvatar(member: assignee),
-                            const SizedBox(width: 8),
-                            Expanded(child: _ValueText(assignee.name)),
-                          ],
-                        ),
-                ),
-                right: InfoTile(
-                  icon: Icons.flag_outlined,
-                  label: 'Priority',
-                  child: _ValueText(task.priority.value),
-                ),
-              ),
-              const Divider(height: 1, color: TaskColors.cardBorder),
-              _InfoRow(
-                left: InfoTile(
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Deadline',
-                  child: _ValueText(formatDeadline(task.deadline)),
-                ),
-                right: InfoTile(
-                  icon: Icons.checklist_rounded,
-                  label: 'Task Status',
-                  child: _ValueText(task.status.value),
-                ),
-              ),
-              const Divider(height: 1, color: TaskColors.cardBorder),
-              _InfoRow(
-                left: InfoTile(
-                  icon: Icons.timer_outlined,
-                  label: 'SLA Status',
-                  child: SlaBadge(status: sla, iconSize: 20),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
         _buildActions(task),
       ],
     );
   }
 
-  /// Buttons depend on the status:
-  /// Todo: Edit, Start, Complete. In Progress: Edit, Pause, Complete.
-  /// Paused: Edit, Resume, Complete. Completed: read only.
+  /// Edit is always shown, like the design. The status action depends on the
+  /// status (Start, Pause or Resume) and Complete is shown until completed.
   Widget _buildActions(Task task) {
-    if (task.status == TaskStatus.completed) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 4),
-        child: Text(
-          'This task is completed and read only.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: TaskColors.muted),
-        ),
-      );
-    }
-
-    final middle = switch (task.status) {
+    final Widget? statusAction = switch (task.status) {
       TaskStatus.todo => AppButton(
           label: 'Start',
           icon: Icons.play_arrow_rounded,
@@ -315,59 +327,77 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
       TaskStatus.paused => AppButton(
           label: 'Resume',
-          icon: Icons.play_arrow_rounded,
+          icon: Icons.refresh_rounded,
           variant: AppButtonVariant.secondary,
           onPressed: _isBusy ? null : () => _runAction(() => _service.resumeTask(task.id)),
         ),
-      TaskStatus.completed => const SizedBox.shrink(),
+      TaskStatus.completed => null,
     };
 
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: AppButton(
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Row(
+        children: [
+          AppButton(
             label: 'Edit',
             icon: Icons.edit_outlined,
             variant: AppButtonVariant.secondary,
             onPressed: _isBusy ? null : _onEdit,
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(flex: 2, child: middle),
-        const SizedBox(width: 10),
-        Expanded(
-          flex: 3,
-          child: AppButton(
-            label: 'Complete',
-            icon: Icons.check_rounded,
-            onPressed: _isBusy ? null : () => _runAction(() => _service.completeTask(task.id)),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
-        color: TaskColors.heading,
+          if (statusAction != null) ...[
+            const SizedBox(width: 9),
+            statusAction,
+          ],
+          if (task.status != TaskStatus.completed) ...[
+            const SizedBox(width: 9),
+            Expanded(
+              child: AppButton(
+                label: 'Complete',
+                icon: Icons.check_rounded,
+                onPressed: _isBusy
+                    ? null
+                    : () => _runAction(() => _service.completeTask(task.id)),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
-/// Two column row with a vertical divider. A missing right tile stays empty.
+/// A titled block with 24px above it (.detail-section).
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: TaskColors.heading,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/// Two column row with a vertical divider. A missing right tile stays empty,
+/// as in the design.
 class _InfoRow extends StatelessWidget {
   const _InfoRow({required this.left, this.right});
 
@@ -381,11 +411,20 @@ class _InfoRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(child: left),
-          const VerticalDivider(width: 1, color: TaskColors.cardBorder),
+          const VerticalDivider(width: 1, thickness: 1, color: TaskColors.cardBorder),
           Expanded(child: right ?? const SizedBox.shrink()),
         ],
       ),
     );
+  }
+}
+
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Divider(height: 1, thickness: 1, color: TaskColors.cardBorder);
   }
 }
 
@@ -401,8 +440,9 @@ class _ValueText extends StatelessWidget {
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
       style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
+        fontSize: 10.5,
+        fontWeight: FontWeight.w600,
+        height: 1.25,
         color: TaskColors.heading,
       ),
     );
