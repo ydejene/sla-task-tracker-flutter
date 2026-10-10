@@ -110,7 +110,11 @@ class TaskService {
   }) async {
     final existingTask = await _db.getTaskById(id);
     if (existingTask == null) {
-      throw NotFoundException('Task with ID \$id not found.');
+      throw NotFoundException('Task with ID $id not found.');
+    }
+
+    if (existingTask.status == TaskStatus.completed) {
+      throw TaskServiceException('Cannot edit a completed task.');
     }
 
     if (title != null && title.trim().isEmpty) {
@@ -130,10 +134,15 @@ class TaskService {
         ? computeAtRiskAt(existingTask.createdAt, deadline)
         : existingTask.atRiskAt;
 
+    String? finalAssignee = existingTask.assignedTo;
+    if (assignedTo != null) {
+      finalAssignee = assignedTo.trim().isEmpty ? null : assignedTo;
+    }
+
     final updatedTask = existingTask.copyWith(
       title: title?.trim() ?? existingTask.title,
       description: description?.trim() ?? existingTask.description,
-      assignedTo: assignedTo ?? existingTask.assignedTo,
+      assignedTo: finalAssignee,
       priority: priority ?? existingTask.priority,
       deadline: deadline ?? existingTask.deadline,
       updatedAt: now,
@@ -147,11 +156,11 @@ class TaskService {
   Future<Task> startTask(String id) async {
     final task = await _db.getTaskById(id);
     if (task == null) {
-      throw NotFoundException('Task with ID \$id not found.');
+      throw NotFoundException('Task with ID $id not found.');
     }
 
-    if (task.status != TaskStatus.todo && task.status != TaskStatus.paused) {
-      throw TaskServiceException('Only Todo or Paused tasks can be started.');
+    if (task.status != TaskStatus.todo) {
+      throw TaskServiceException('Only Todo tasks can be started. Use resumeTask for Paused tasks.');
     }
 
     final updatedTask = task.copyWith(
@@ -166,7 +175,7 @@ class TaskService {
   Future<Task> pauseTask(String id) async {
     final task = await _db.getTaskById(id);
     if (task == null) {
-      throw NotFoundException('Task with ID \$id not found.');
+      throw NotFoundException('Task with ID $id not found.');
     }
 
     if (task.status != TaskStatus.inProgress) {
@@ -187,7 +196,7 @@ class TaskService {
   Future<Task> resumeTask(String id) async {
     final task = await _db.getTaskById(id);
     if (task == null) {
-      throw NotFoundException('Task with ID \$id not found.');
+      throw NotFoundException('Task with ID $id not found.');
     }
 
     if (task.status != TaskStatus.paused || task.pausedAt == null) {
@@ -215,7 +224,7 @@ class TaskService {
   Future<Task> completeTask(String id) async {
     final task = await _db.getTaskById(id);
     if (task == null) {
-      throw NotFoundException('Task with ID \$id not found.');
+      throw NotFoundException('Task with ID $id not found.');
     }
 
     if (task.status == TaskStatus.completed) {
@@ -224,6 +233,7 @@ class TaskService {
 
     final updatedTask = task.copyWith(
       status: TaskStatus.completed,
+      clearPausedAt: true,
       updatedAt: _clock(),
     );
 
@@ -234,7 +244,7 @@ class TaskService {
   Future<void> deleteTask(String id) async {
     final task = await _db.getTaskById(id);
     if (task == null) {
-      throw NotFoundException('Task with ID \$id not found.');
+      throw NotFoundException('Task with ID $id not found.');
     }
     await _db.deleteTask(id);
   }
