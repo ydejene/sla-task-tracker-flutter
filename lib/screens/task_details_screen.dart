@@ -7,7 +7,6 @@ import '../models/team_member.dart';
 import '../services/database_service.dart';
 import '../services/task_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_header.dart';
 import '../widgets/avatar_widget.dart';
 import '../widgets/task_card.dart';
 import 'task_form_screen.dart';
@@ -207,39 +206,72 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     final isCompleted = task.status == TaskStatus.completed;
 
     return PopScope(
-      canPop: false,
+      canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         // Return _hasModified to caller so parent screen refreshes
-        if (!didPop) Navigator.pop(context, _hasModified);
       },
       child: Scaffold(
         backgroundColor: AppTheme.background,
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AppHeader(
-              onBack: () => Navigator.pop(context, _hasModified),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: AppTheme.textFaint),
-                  onPressed: _handleDelete,
-                  tooltip: 'Delete task',
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Workflow Header matching prototype
+              Container(
+                decoration: const BoxDecoration(
+                  color: AppTheme.chrome,
+                  border: Border(
+                    bottom: BorderSide(color: Color(0x1F6356D9), width: 1),
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
                 ),
-              ],
-              child: const Text(
-                'Task Details',
-                style: TextStyle(
-                  color: AppTheme.text,
-                  fontSize: 23,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.035 * 23,
-                  height: 1.2,
+                padding: const EdgeInsets.fromLTRB(21, 52, 21, 20),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context, _hasModified),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 37,
+                        height: 37,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(180),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0x1F6356D9)),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 16,
+                          color: AppTheme.primaryDeep,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Text(
+                        'Task Details',
+                        style: TextStyle(
+                          color: AppTheme.text,
+                          fontSize: 23,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.035 * 23,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: AppTheme.textFaint),
+                      onPressed: _handleDelete,
+                      tooltip: 'Delete task',
+                    ),
+                  ],
                 ),
               ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child:
+
               // Detail Content
               Padding(
                 padding: const EdgeInsets.fromLTRB(21, 24, 21, 40),
@@ -733,9 +765,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   ],
                 ),
               ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

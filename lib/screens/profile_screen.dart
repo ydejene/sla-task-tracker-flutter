@@ -4,20 +4,18 @@ import '../models/task.dart';
 import '../models/team_member.dart';
 import '../services/task_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
 import '../widgets/avatar_widget.dart';
-import '../utils/date_format.dart';
-import '../widgets/priority_badge.dart';
-import '../widgets/sla_badge.dart';
-import '../widgets/status_badge.dart';
-import '../widgets/task_colors.dart';
+import '../widgets/task_card.dart';
 import 'task_details_screen.dart';
 import 'user_selection_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final TeamMember currentUser;
   final TeamMember? memberToView;
+  final VoidCallback? onBack;
 
-  const ProfileScreen({super.key, required this.currentUser, this.memberToView});
+  const ProfileScreen({super.key, required this.currentUser, this.memberToView, this.onBack});
 
   @override
   State<ProfileScreen> createState() => ProfileScreenState();
@@ -60,7 +58,12 @@ class ProfileScreenState extends State<ProfileScreen> {
   /// Opens Task Details and reloads the list if the task was changed there.
   Future<void> _openTask(Task task) async {
     final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => TaskDetailsScreen(taskId: task.id)),
+      MaterialPageRoute(
+        builder: (_) => TaskDetailsScreen(
+          taskId: task.id,
+          currentUser: widget.currentUser,
+        ),
+      ),
     );
     if (changed == true && mounted) loadMemberTasks();
   }
@@ -86,57 +89,19 @@ class ProfileScreenState extends State<ProfileScreen> {
     final workloadLevel = _taskService.getWorkloadLevel(activeTasks.length);
     final bars = _taskService.getWorkloadBars(workloadLevel);
 
+    final onBack = widget.onBack ??
+        (Navigator.of(context).canPop() ? () => Navigator.of(context).pop() : null);
+
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: RefreshIndicator(
-        onRefresh: loadMemberTasks,
-        color: AppTheme.primary,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withAlpha(31),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                ),
-                padding: const EdgeInsets.only(bottom: 1),
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(21, MediaQuery.of(context).padding.top + 28, 21, 24),
-                  decoration: const BoxDecoration(
-                    color: AppTheme.chrome,
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          !_isViewingSelf
-                              ? GestureDetector(
-                                  onTap: () => Navigator.of(context).pop(),
-                                  child: Container(
-                                    width: 37,
-                                    height: 37,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withAlpha(178),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: AppTheme.primary.withAlpha(31)),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryDeep, size: 16),
-                                  ),
-                                )
-                              : const Text(
-                                  'Profile',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryDeep,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                          if (_isViewingSelf)
-                            GestureDetector(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppHeader(
+            onBack: onBack,
+            actions: [
+              if (_isViewingSelf)
+                GestureDetector(
                               onTap: _switchUser,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -160,9 +125,40 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 11),
+            ],
+            child: Text(
+              _isViewingSelf ? 'Profile' : _displayMember.firstName,
+              style: const TextStyle(
+                color: AppTheme.text,
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.035 * 23,
+                height: 1.2,
+              ),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+        onRefresh: loadMemberTasks,
+        color: AppTheme.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withAlpha(31),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                ),
+                padding: const EdgeInsets.only(bottom: 1),
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(21, 18, 21, 24),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.chrome,
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -195,7 +191,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(21, 22, 21, 116),
+              padding: const EdgeInsets.fromLTRB(21, 22, 21, 40),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   Container(
@@ -301,17 +297,23 @@ class ProfileScreenState extends State<ProfileScreen> {
                   if (_memberTasks.isEmpty)
                     const _EmptyAssignedTasks()
                   else
-                    ..._memberTasks.map((t) => _ProfileTaskCard(
-                          task: t,
-                          member: _displayMember,
-                          slaStatus: _taskService.getSlaStatus(t, now: DateTime.now()),
-                          onTap: () => _openTask(t),
+                    ..._memberTasks.map((t) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: TaskCard(
+                            task: t,
+                            slaStatus: _taskService.getSlaStatus(t, now: DateTime.now()),
+                            assignee: _displayMember,
+                            onTap: () => _openTask(t),
+                          ),
                         )),
                 ]),
               ),
             ),
           ],
         ),
+      ),
+          ),
+        ],
       ),
     );
   }
@@ -354,125 +356,6 @@ class _StatItem extends StatelessWidget {
           const SizedBox(height: 1),
           Text(label, style: const TextStyle(color: AppTheme.textFaint, fontSize: 8.5)),
         ],
-      ),
-    );
-  }
-}
-
-/// Task card from the design: tinted by SLA status, with the workflow status,
-/// the SLA mark, and the assignee, priority and deadline in the footer.
-class _ProfileTaskCard extends StatelessWidget {
-  final Task task;
-  final TeamMember member;
-  final SlaStatus slaStatus;
-  final VoidCallback onTap;
-
-  const _ProfileTaskCard({
-    required this.task,
-    required this.member,
-    required this.slaStatus,
-    required this.onTap,
-  });
-
-  Color get _deadlineColor => switch (slaStatus) {
-        SlaStatus.overdue => TaskColors.overdue,
-        SlaStatus.atRisk => TaskColors.atRiskText,
-        _ => TaskColors.cardDetail,
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    const detailStyle = TextStyle(
-      fontSize: 9.5,
-      fontWeight: FontWeight.w500,
-      color: TaskColors.cardDetail,
-    );
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: SlaBadge.softColorFor(slaStatus),
-          border: Border.all(color: SlaBadge.borderColorFor(slaStatus)),
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: const [
-            BoxShadow(color: Color(0x0A1D1D2F), blurRadius: 18, offset: Offset(0, 5)),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    task.title,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                      height: 1.35,
-                      color: AppTheme.text,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Padding(
-                  padding: EdgeInsets.only(top: 1),
-                  child: Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFAAA8B6)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                StatusBadge(status: task.status),
-                const SizedBox(width: 7),
-                SlaBadge(status: slaStatus, compact: true),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.only(top: 11),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0x17505062))),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        AvatarWidget.fromMember(member, radius: 13.5, fontSize: 8.5),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            member.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: detailStyle,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  PriorityBadge(priority: task.priority),
-                  const SizedBox(width: 12),
-                  Icon(Icons.calendar_today_outlined, size: 14, color: _deadlineColor),
-                  const SizedBox(width: 4),
-                  Text(
-                    formatDeadline(task.deadline),
-                    style: detailStyle.copyWith(color: _deadlineColor),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -19,6 +19,9 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
+  final GlobalKey<DashboardScreenState> _dashboardKey = GlobalKey<DashboardScreenState>();
+  final GlobalKey<TasksScreenState> _tasksKey = GlobalKey<TasksScreenState>();
+  final GlobalKey<TeamScreenState> _teamKey = GlobalKey<TeamScreenState>();
   final GlobalKey<ProfileScreenState> _profileKey = GlobalKey<ProfileScreenState>();
 
   // One Navigator per tab. Screens opened from a tab (Task Details, the task
@@ -33,10 +36,28 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     final roots = <Widget>[
-      const DashboardScreen(),
-      const TasksScreen(),
-      const TeamScreen(),
-      ProfileScreen(key: _profileKey, currentUser: widget.currentUser),
+      DashboardScreen(
+        key: _dashboardKey,
+        currentUser: widget.currentUser,
+        onOpenProfile: () => _onItemTapped(3),
+      ),
+      TasksScreen(
+        key: _tasksKey,
+        currentUser: widget.currentUser,
+        onOpenProfile: () => _onItemTapped(3),
+        onBack: () => _onItemTapped(0),
+      ),
+      TeamScreen(
+        key: _teamKey,
+        currentUser: widget.currentUser,
+        onOpenProfile: () => _onItemTapped(3),
+        onBack: () => _onItemTapped(0),
+      ),
+      ProfileScreen(
+        key: _profileKey,
+        currentUser: widget.currentUser,
+        onBack: () => _onItemTapped(0),
+      ),
     ];
     _tabs = [
       for (var i = 0; i < roots.length; i++)
@@ -52,7 +73,13 @@ class _MainShellState extends State<MainShell> {
     setState(() {
       _selectedIndex = index;
     });
-    if (index == 3) {
+    if (index == 0) {
+      _dashboardKey.currentState?.loadDashboardData();
+    } else if (index == 1) {
+      _tasksKey.currentState?.loadTasks();
+    } else if (index == 2) {
+      _teamKey.currentState?.loadTeamData();
+    } else if (index == 3) {
       _profileKey.currentState?.loadMemberTasks();
     }
   }
@@ -64,7 +91,7 @@ class _MainShellState extends State<MainShell> {
     final navigator = _navigatorKeys[_selectedIndex].currentState;
     if (navigator != null && await navigator.maybePop()) return;
     if (_selectedIndex != 0) {
-      setState(() => _selectedIndex = 0);
+      _onItemTapped(0);
     } else {
       await SystemNavigator.pop();
     }
