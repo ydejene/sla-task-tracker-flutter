@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../models/team_member.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
@@ -16,23 +18,37 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _selectedIndex = 0; 
+  int _selectedIndex = 0;
   final GlobalKey<ProfileScreenState> _profileKey = GlobalKey<ProfileScreenState>();
 
-  late final List<Widget> _screens;
+  // One Navigator per tab. Screens opened from a tab (Task Details, the task
+  // form, another member's profile) are pushed on that tab's Navigator, so the
+  // bottom bar stays visible, like in the design.
+  final List<GlobalKey<NavigatorState>> _navigatorKeys =
+      List.generate(4, (_) => GlobalKey<NavigatorState>());
+
+  late final List<Widget> _tabs;
 
   @override
   void initState() {
     super.initState();
-    _screens = [
+    final roots = <Widget>[
       const DashboardScreen(),
       const TasksScreen(),
       const TeamScreen(),
       ProfileScreen(key: _profileKey, currentUser: widget.currentUser),
     ];
+    _tabs = [
+      for (var i = 0; i < roots.length; i++)
+        _TabNavigator(navigatorKey: _navigatorKeys[i], root: roots[i]),
+    ];
   }
 
   void _onItemTapped(int index) {
+    if (index == _selectedIndex) {
+      // Tapping the current tab goes back to its first screen.
+      _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -41,10 +57,23 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
+  /// Android back button: close the open screen of the current tab first
+  /// (maybePop lets a screen such as Task Details return its result), then go
+  /// back to Overview, and only then leave the app.
+  Future<void> _onBack() async {
+    final navigator = _navigatorKeys[_selectedIndex].currentState;
+    if (navigator != null && await navigator.maybePop()) return;
+    if (_selectedIndex != 0) {
+      setState(() => _selectedIndex = 0);
+    } else {
+      await SystemNavigator.pop();
+    }
+  }
+
   Widget _buildNavItem(int index, IconData iconOutlined, IconData iconFilled, String label) {
     final isActive = _selectedIndex == index;
     final color = isActive ? AppTheme.primary : const Color(0xFF7F7A99);
-    
+
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -79,26 +108,33 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF4F1FF),
-          border: Border(top: BorderSide(color: AppTheme.primary.withAlpha(31))),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _onBack();
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _tabs,
         ),
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
-        child: SizedBox(
-          height: 76,
-          child: Row(
-            children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Overview'),
-              _buildNavItem(1, Icons.list_alt_outlined, Icons.list_alt, 'Tasks'),
-              _buildNavItem(2, Icons.people_outline, Icons.people, 'Team'),
-              _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
-            ],
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F1FF),
+            border: Border(top: BorderSide(color: AppTheme.primary.withAlpha(31))),
+          ),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+          child: SizedBox(
+            height: 76,
+            child: Row(
+              children: [
+                _buildNavItem(0, Icons.home_outlined, Icons.home, 'Overview'),
+                _buildNavItem(1, Icons.list_alt_outlined, Icons.list_alt, 'Tasks'),
+                _buildNavItem(2, Icons.people_outline, Icons.people, 'Team'),
+                _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
+              ],
+            ),
           ),
         ),
       ),
@@ -106,3 +142,21 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
+/// A tab's own Navigator, starting at the tab's main screen.
+class _TabNavigator extends StatelessWidget {
+  const _TabNavigator({required this.navigatorKey, required this.root});
+
+  final GlobalKey<NavigatorState> navigatorKey;
+  final Widget root;
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      key: navigatorKey,
+      onGenerateRoute: (settings) => MaterialPageRoute(
+        settings: settings,
+        builder: (_) => root,
+      ),
+    );
+  }
+}
