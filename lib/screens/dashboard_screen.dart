@@ -453,9 +453,9 @@ class DashboardScreenState extends State<DashboardScreen> {
 
                     // Section 2: Needs Attention
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Column(
+                        const Expanded(
+                          child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -476,7 +476,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                           ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                           decoration: BoxDecoration(
@@ -492,6 +494,8 @@ class DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        _buildAttentionFilterButton(),
                       ],
                     ),
                     const SizedBox(height: 13),
