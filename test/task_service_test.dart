@@ -283,5 +283,29 @@ void main() {
         throwsA(isA<TaskServiceException>())
       );
     });
+
+    test('T17: Workload level calculations across all boundary thresholds', () {
+      // Light: <= 1
+      expect(taskService.getWorkloadLevel(0), 'Light');
+      expect(taskService.getWorkloadLevel(1), 'Light');
+      expect(taskService.getWorkloadBars('Light'), 1);
+
+      // Balanced: 2 (<= 2)
+      expect(taskService.getWorkloadLevel(2), 'Balanced');
+      expect(taskService.getWorkloadBars('Balanced'), 2);
+
+      // Focused: 3 or 4 (<= 4)
+      expect(taskService.getWorkloadLevel(3), 'Focused');
+      expect(taskService.getWorkloadLevel(4), 'Focused');
+      expect(taskService.getWorkloadBars('Focused'), 3);
+
+      // Full: > 4
+      expect(taskService.getWorkloadLevel(5), 'Full');
+      expect(taskService.getWorkloadLevel(10), 'Full');
+      expect(taskService.getWorkloadBars('Full'), 4);
+
+      // Default/fallback bars
+      expect(taskService.getWorkloadBars('Unknown'), 1);
+    });
   });
 }
