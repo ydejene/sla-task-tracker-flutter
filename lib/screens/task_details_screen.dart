@@ -10,7 +10,7 @@ import '../services/task_service.dart';
 import '../utils/date_format.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
-import '../widgets/assignee_avatar.dart';
+import '../widgets/avatar_widget.dart';
 import '../widgets/info_tile.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/sla_badge.dart';
@@ -267,7 +267,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         ? const _ValueText('Unassigned')
                         : Row(
                             children: [
-                              AssigneeAvatar(member: assignee),
+                              AvatarWidget.fromMember(assignee, radius: 13.5, fontSize: 8.5),
                               const SizedBox(width: 6),
                               Expanded(child: _ValueText(assignee.name)),
                             ],
