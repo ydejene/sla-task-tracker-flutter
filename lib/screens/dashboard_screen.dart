@@ -159,7 +159,6 @@ class DashboardScreenState extends State<DashboardScreen> {
     final header = AppHeader(
       onBack: widget.onBack,
       actions: [
-        _buildAttentionFilterButton(),
         HeaderAvatar(member: widget.currentUser, onTap: widget.onOpenProfile),
       ],
       child: Column(
@@ -176,7 +175,18 @@ class DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${_greeting()}, ${widget.currentUser.firstName}',
+            '${_greeting()},',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.textSoft,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+            ),
+          ),
+          Text(
+            widget.currentUser.firstName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
