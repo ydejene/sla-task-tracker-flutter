@@ -4,14 +4,17 @@ import '../models/task.dart';
 import '../models/team_member.dart';
 import '../services/task_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
 import '../widgets/avatar_widget.dart';
+import 'task_details_screen.dart';
 import 'user_selection_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final TeamMember currentUser;
   final TeamMember? memberToView;
+  final VoidCallback? onBack;
 
-  const ProfileScreen({super.key, required this.currentUser, this.memberToView});
+  const ProfileScreen({super.key, required this.currentUser, this.memberToView, this.onBack});
 
   @override
   State<ProfileScreen> createState() => ProfileScreenState();
@@ -72,57 +75,19 @@ class ProfileScreenState extends State<ProfileScreen> {
     final workloadLevel = _taskService.getWorkloadLevel(activeTasks.length);
     final bars = _taskService.getWorkloadBars(workloadLevel);
 
+    final onBack = widget.onBack ??
+        (Navigator.of(context).canPop() ? () => Navigator.of(context).pop() : null);
+
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: RefreshIndicator(
-        onRefresh: loadMemberTasks,
-        color: AppTheme.primary,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withAlpha(31),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                ),
-                padding: const EdgeInsets.only(bottom: 1),
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(21, MediaQuery.of(context).padding.top + 28, 21, 24),
-                  decoration: const BoxDecoration(
-                    color: AppTheme.chrome,
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          !_isViewingSelf
-                              ? GestureDetector(
-                                  onTap: () => Navigator.of(context).pop(),
-                                  child: Container(
-                                    width: 37,
-                                    height: 37,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withAlpha(178),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: AppTheme.primary.withAlpha(31)),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryDeep, size: 16),
-                                  ),
-                                )
-                              : const Text(
-                                  'Profile',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryDeep,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                          if (_isViewingSelf)
-                            GestureDetector(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppHeader(
+            onBack: onBack,
+            actions: [
+              if (_isViewingSelf)
+                GestureDetector(
                               onTap: _switchUser,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -146,9 +111,40 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 11),
+            ],
+            child: Text(
+              _isViewingSelf ? 'Profile' : _displayMember.firstName,
+              style: const TextStyle(
+                color: AppTheme.text,
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.035 * 23,
+                height: 1.2,
+              ),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+        onRefresh: loadMemberTasks,
+        color: AppTheme.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withAlpha(31),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                ),
+                padding: const EdgeInsets.only(bottom: 1),
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(21, 18, 21, 24),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.chrome,
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -181,7 +177,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(21, 22, 21, 116),
+              padding: const EdgeInsets.fromLTRB(21, 22, 21, 40),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   Container(
@@ -302,12 +298,29 @@ class ProfileScreenState extends State<ProfileScreen> {
                     ..._memberTasks.map((t) => _ProfileTaskCard(
                           task: t,
                           slaStatus: _taskService.getSlaStatus(t, now: DateTime.now()),
+                          onTap: () async {
+                            final changed = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TaskDetailsScreen(
+                                  taskId: t.id,
+                                  currentUser: widget.currentUser,
+                                ),
+                              ),
+                            );
+                            if (changed == true) {
+                              loadMemberTasks();
+                            }
+                          },
                         )),
                 ]),
               ),
             ),
           ],
         ),
+      ),
+          ),
+        ],
       ),
     );
   }
@@ -358,8 +371,13 @@ class _StatItem extends StatelessWidget {
 class _ProfileTaskCard extends StatelessWidget {
   final Task task;
   final SlaStatus slaStatus;
+  final VoidCallback? onTap;
 
-  const _ProfileTaskCard({required this.task, required this.slaStatus});
+  const _ProfileTaskCard({
+    required this.task,
+    required this.slaStatus,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -383,33 +401,35 @@ class _ProfileTaskCard extends StatelessWidget {
       }
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0x0F202030)),
-        boxShadow: const [BoxShadow(color: Color(0x0A1D1D2F), blurRadius: 22, offset: Offset(0, 6))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  task.title,
-                  style: const TextStyle(color: AppTheme.text, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.35),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: const Color(0x0F202030)),
+          boxShadow: const [BoxShadow(color: Color(0x0A1D1D2F), blurRadius: 22, offset: Offset(0, 6))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: const TextStyle(color: AppTheme.text, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.35),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              // TODO(teammate): Wire up navigation to TaskDetailsScreen once implemented
-              const Icon(Icons.chevron_right, size: 18, color: AppTheme.textFaint),
-            ],
-          ),
+                const Icon(Icons.chevron_right, size: 18, color: AppTheme.textFaint),
+              ],
+            ),
           const SizedBox(height: 7),
           Row(
             children: [
@@ -434,6 +454,7 @@ class _ProfileTaskCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

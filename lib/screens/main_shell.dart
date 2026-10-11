@@ -17,6 +17,9 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0; 
+  final GlobalKey<DashboardScreenState> _dashboardKey = GlobalKey<DashboardScreenState>();
+  final GlobalKey<TasksScreenState> _tasksKey = GlobalKey<TasksScreenState>();
+  final GlobalKey<TeamScreenState> _teamKey = GlobalKey<TeamScreenState>();
   final GlobalKey<ProfileScreenState> _profileKey = GlobalKey<ProfileScreenState>();
 
   late final List<Widget> _screens;
@@ -25,10 +28,28 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _screens = [
-      const DashboardScreen(),
-      const TasksScreen(),
-      const TeamScreen(),
-      ProfileScreen(key: _profileKey, currentUser: widget.currentUser),
+      DashboardScreen(
+        key: _dashboardKey,
+        currentUser: widget.currentUser,
+        onOpenProfile: () => _onItemTapped(3),
+      ),
+      TasksScreen(
+        key: _tasksKey,
+        currentUser: widget.currentUser,
+        onOpenProfile: () => _onItemTapped(3),
+        onBack: () => _onItemTapped(0),
+      ),
+      TeamScreen(
+        key: _teamKey,
+        currentUser: widget.currentUser,
+        onOpenProfile: () => _onItemTapped(3),
+        onBack: () => _onItemTapped(0),
+      ),
+      ProfileScreen(
+        key: _profileKey,
+        currentUser: widget.currentUser,
+        onBack: () => _onItemTapped(0),
+      ),
     ];
   }
 
@@ -36,7 +57,13 @@ class _MainShellState extends State<MainShell> {
     setState(() {
       _selectedIndex = index;
     });
-    if (index == 3) {
+    if (index == 0) {
+      _dashboardKey.currentState?.loadDashboardData();
+    } else if (index == 1) {
+      _tasksKey.currentState?.loadTasks();
+    } else if (index == 2) {
+      _teamKey.currentState?.loadTeamData();
+    } else if (index == 3) {
       _profileKey.currentState?.loadMemberTasks();
     }
   }
@@ -79,7 +106,13 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // System/gesture back on Tasks, Team or Profile returns to Overview first.
+    return PopScope(
+      canPop: _selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _onItemTapped(0);
+      },
+      child: Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
@@ -101,6 +134,7 @@ class _MainShellState extends State<MainShell> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
