@@ -345,7 +345,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                                       Text(
                                         healthyPercentage >= 70
                                             ? 'Your team is in good shape'
-                                            : 'Needs immediate action',
+                                            : overdueCount > 0
+                                                ? 'Needs immediate action'
+                                                : 'Some tasks need attention',
                                         style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
