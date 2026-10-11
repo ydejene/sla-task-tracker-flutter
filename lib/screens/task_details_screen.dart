@@ -1,449 +1,785 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../models/enums.dart';
 import '../models/exceptions.dart';
 import '../models/task.dart';
 import '../models/team_member.dart';
+import '../services/database_service.dart';
 import '../services/task_service.dart';
-import '../utils/date_format.dart';
-import '../widgets/app_button.dart';
-import '../widgets/app_card.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
 import '../widgets/avatar_widget.dart';
-import '../widgets/info_tile.dart';
-import '../widgets/screen_header.dart';
-import '../widgets/sla_badge.dart';
-import '../widgets/status_badge.dart';
-import '../widgets/task_colors.dart';
+import '../widgets/task_card.dart';
 import 'task_form_screen.dart';
 
-/// Shows one task. Pops with true if anything changed (start, pause, resume,
-/// complete or edit) so the previous screen can reload its list.
 class TaskDetailsScreen extends StatefulWidget {
-  const TaskDetailsScreen({super.key, required this.taskId});
-
   final String taskId;
+  final TeamMember currentUser;
+
+  const TaskDetailsScreen({
+    super.key,
+    required this.taskId,
+    required this.currentUser,
+  });
 
   @override
   State<TaskDetailsScreen> createState() => _TaskDetailsScreenState();
 }
 
 class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
-  final TaskService _service = TaskService();
+  final TaskService _taskService = TaskService();
+  final DatabaseService _dbService = DatabaseService();
 
   Task? _task;
   TeamMember? _assignee;
-  String? _loadError;
   bool _isLoading = true;
-  bool _isBusy = false;
-  bool _changed = false;
-  Timer? _ticker;
+  bool _hasModified = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
-    // SLA status depends on the current time, so rebuild every minute.
-    _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() {});
-    });
+    _loadTaskDetails();
   }
 
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loadError = null;
-      if (_task == null) _isLoading = true;
-    });
+  Future<void> _loadTaskDetails() async {
     try {
-      final task = await _service.getTaskById(widget.taskId);
-      if (task == null) throw NotFoundException('Task not found.');
-      final assigneeId = task.assignedTo;
-      final assignee =
-          assigneeId == null ? null : await _service.getMemberById(assigneeId);
-      if (!mounted) return;
-      setState(() {
-        _task = task;
-        _assignee = assignee;
-        _isLoading = false;
-      });
-    } on AppException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loadError = e.message;
-        _isLoading = false;
-      });
+      final task = await _taskService.getTaskById(widget.taskId);
+      TeamMember? assignee;
+      if (task?.assignedTo != null) {
+        assignee = await _dbService.getTeamMemberById(task!.assignedTo!);
+      }
+
+      if (mounted) {
+        setState(() {
+          _task = task;
+          _assignee = assignee;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  Color _getSurfaceBg(SlaStatus sla) {
+    switch (sla) {
+      case SlaStatus.onTrack:
+        return Color.alphaBlend(AppTheme.blue.withAlpha(15), AppTheme.surface);
+      case SlaStatus.atRisk:
+        return Color.alphaBlend(AppTheme.amber.withAlpha(18), AppTheme.surface);
+      case SlaStatus.overdue:
+        return Color.alphaBlend(AppTheme.red.withAlpha(15), AppTheme.surface);
+      case SlaStatus.completed:
+        return Color.alphaBlend(AppTheme.green.withAlpha(15), AppTheme.surface);
+    }
   }
 
-  /// Runs a status action. The service decides if it is allowed and throws an
-  /// AppException with a message if not, which is shown in a SnackBar.
-  Future<void> _runAction(Future<Task> Function() action) async {
-    if (_isBusy) return;
-    setState(() => _isBusy = true);
+  Color _getBorderColor(SlaStatus sla) {
+    switch (sla) {
+      case SlaStatus.onTrack:
+        return Color.alphaBlend(AppTheme.blue.withAlpha(33), AppTheme.surface);
+      case SlaStatus.atRisk:
+        return Color.alphaBlend(AppTheme.amber.withAlpha(36), AppTheme.surface);
+      case SlaStatus.overdue:
+        return Color.alphaBlend(AppTheme.red.withAlpha(33), AppTheme.surface);
+      case SlaStatus.completed:
+        return Color.alphaBlend(AppTheme.green.withAlpha(33), AppTheme.surface);
+    }
+  }
+
+  IconData _getSlaIcon(SlaStatus sla) {
+    switch (sla) {
+      case SlaStatus.onTrack:
+        return Icons.check;
+      case SlaStatus.atRisk:
+        return Icons.access_time_rounded;
+      case SlaStatus.overdue:
+        return Icons.priority_high_rounded;
+      case SlaStatus.completed:
+        return Icons.check_rounded;
+    }
+  }
+
+  Future<void> _handleStart() async {
     try {
-      final updated = await action();
-      if (!mounted) return;
-      setState(() {
-        _task = updated;
-        _changed = true;
-      });
+      await _taskService.startTask(widget.taskId);
+      _hasModified = true;
+      await _loadTaskDetails();
     } on AppException catch (e) {
-      if (!mounted) return;
-      _showMessage(e.message);
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
+      _showError(e.message);
     }
   }
 
-  Future<void> _onEdit() async {
-    final task = _task;
-    if (task == null) return;
-    if (task.status == TaskStatus.completed) {
-      _showMessage('Completed tasks cannot be edited.');
-      return;
+  Future<void> _handlePause() async {
+    try {
+      await _taskService.pauseTask(widget.taskId);
+      _hasModified = true;
+      await _loadTaskDetails();
+    } on AppException catch (e) {
+      _showError(e.message);
     }
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => TaskFormScreen(task: task)),
+  }
+
+  Future<void> _handleResume() async {
+    try {
+      await _taskService.resumeTask(widget.taskId);
+      _hasModified = true;
+      await _loadTaskDetails();
+    } on AppException catch (e) {
+      _showError(e.message);
+    }
+  }
+
+  Future<void> _handleComplete() async {
+    try {
+      await _taskService.completeTask(widget.taskId);
+      _hasModified = true;
+      await _loadTaskDetails();
+    } on AppException catch (e) {
+      _showError(e.message);
+    }
+  }
+
+  Future<void> _handleDelete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Task'),
+        content: const Text('Are you sure you want to delete this task? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
-    if (saved == true && mounted) {
-      _changed = true;
-      await _load();
+
+    if (confirm == true) {
+      try {
+        await _taskService.deleteTask(widget.taskId);
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      } on AppException catch (e) {
+        _showError(e.message);
+      }
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.red,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // canPop is false so both the back button and the system back gesture end
-    // up here, and we can return _changed to the previous screen.
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+      );
+    }
+
+    if (_task == null) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        appBar: AppBar(title: const Text('Task Not Found')),
+        body: const Center(child: Text('This task does not exist.')),
+      );
+    }
+
+    final task = _task!;
+    final slaStatus = _taskService.computeSlaStatus(task);
+    final slaColor = AppTheme.getSlaColor(slaStatus);
+    final isCompleted = task.status == TaskStatus.completed;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        Navigator.of(context).pop(_changed);
+        // Return _hasModified to caller so parent screen refreshes
+        if (!didPop) Navigator.pop(context, _hasModified);
       },
       child: Scaffold(
-        backgroundColor: TaskColors.pageBackground,
+        backgroundColor: AppTheme.background,
         body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ScreenHeader(
-              title: 'Task Details',
-              onBack: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(child: _buildBody()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: TaskColors.primary, strokeWidth: 2.5),
-      );
-    }
-    final task = _task;
-    if (_loadError != null || task == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _loadError ?? 'Something went wrong.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: TaskColors.body),
-              ),
-              const SizedBox(height: 16),
-              AppButton(label: 'Try again', onPressed: _load),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final sla = _service.getSlaStatus(task, now: DateTime.now());
-    final assignee = _assignee;
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(21, 0, 21, 32),
-      children: [
-        // Hero: overline, title and the status and SLA row (.detail-hero).
-        Padding(
-          padding: const EdgeInsets.fromLTRB(2, 24, 2, 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'TASK',
+            AppHeader(
+              onBack: () => Navigator.pop(context, _hasModified),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: AppTheme.textFaint),
+                  onPressed: _handleDelete,
+                  tooltip: 'Delete task',
+                ),
+              ],
+              child: const Text(
+                'Task Details',
                 style: TextStyle(
-                  fontSize: 10,
+                  color: AppTheme.text,
+                  fontSize: 23,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                  color: TaskColors.primary,
+                  letterSpacing: -0.035 * 23,
+                  height: 1.2,
                 ),
               ),
-              const SizedBox(height: 7),
-              Text(
-                task.title,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.66,
-                  height: 1.25,
-                  color: TaskColors.heading,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                decoration: BoxDecoration(
-                  color: SlaBadge.softColorFor(sla),
-                  border: Border.all(color: SlaBadge.borderColorFor(sla)),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child:
+              // Detail Content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(21, 24, 21, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    StatusBadge(status: task.status),
-                    const SizedBox(width: 10),
-                    SlaBadge(status: sla),
+                    // Detail Hero
+                    const Text(
+                      'TASK',
+                      style: TextStyle(
+                        color: AppTheme.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.08 * 10,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      task.title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.03 * 22,
+                        height: 1.25,
+                        color: AppTheme.text,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Detail Status Row
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: _getSurfaceBg(slaStatus),
+                            borderRadius: BorderRadius.circular(11),
+                            border: Border.all(color: _getBorderColor(slaStatus)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0x17707080),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: const Color(0x14707080)),
+                                ),
+                                child: Text(
+                                  task.status.value,
+                                  style: const TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF686878),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 25,
+                                    height: 25,
+                                    decoration: BoxDecoration(
+                                      color: slaColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      _getSlaIcon(slaStatus),
+                                      size: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    slaStatus.value,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: slaColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Description Section
+                    const Text(
+                      'Description',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.text,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: const Color(0x0F202030)),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x0A1D1D2F),
+                            blurRadius: 22,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.description_outlined,
+                            size: 18,
+                            color: AppTheme.primary,
+                          ),
+                          const SizedBox(width: 11),
+                          Expanded(
+                            child: Text(
+                              task.description.isEmpty
+                                  ? 'No description provided.'
+                                  : task.description,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                height: 1.6,
+                                color: AppTheme.textSoft,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Task Information Section
+                    const Text(
+                      'Task information',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.text,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: const Color(0x0F202030)),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x0A1D1D2F),
+                            blurRadius: 22,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildDetailItem(
+                                  icon: Icons.person_outline,
+                                  label: 'Assignee',
+                                  valueWidget: _assignee != null
+                                      ? Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            AvatarWidget.fromMember(
+                                              _assignee!,
+                                              radius: 10,
+                                              fontSize: 8.5,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                _assignee!.name,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppTheme.text,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : const Text(
+                                          'Unassigned',
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.textSoft,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              Container(width: 1, height: 67, color: AppTheme.line),
+                              Expanded(
+                                child: _buildDetailItem(
+                                  icon: Icons.flag_outlined,
+                                  label: 'Priority',
+                                  valueWidget: Text(
+                                    task.priority.value,
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.text,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(height: 1, color: AppTheme.line),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildDetailItem(
+                                  icon: Icons.calendar_today_outlined,
+                                  label: 'Deadline',
+                                  valueWidget: Text(
+                                    TaskCard.formatDeadline(task.deadline),
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.text,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Container(width: 1, height: 67, color: AppTheme.line),
+                              Expanded(
+                                child: _buildDetailItem(
+                                  icon: Icons.checklist_rounded,
+                                  label: 'Task Status',
+                                  valueWidget: Text(
+                                    task.status.value,
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.text,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(height: 1, color: AppTheme.line),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildDetailItem(
+                                  icon: _getSlaIcon(slaStatus),
+                                  label: 'SLA Status',
+                                  valueWidget: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 18,
+                                        height: 18,
+                                        decoration: BoxDecoration(
+                                          color: slaColor,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          _getSlaIcon(slaStatus),
+                                          size: 10,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        slaStatus.value,
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: slaColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Actions Row
+                    Row(
+                      children: [
+                        // Edit button (disabled if completed)
+                        if (!isCompleted)
+                          InkWell(
+                            onTap: () async {
+                              final updated = await Navigator.push<bool>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => TaskFormScreen(
+                                    task: task,
+                                    currentUser: widget.currentUser,
+                                  ),
+                                ),
+                              );
+                              if (updated == true) {
+                                _hasModified = true;
+                                _loadTaskDetails();
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(11),
+                            child: Container(
+                              height: 42,
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surface,
+                                borderRadius: BorderRadius.circular(11),
+                                border: Border.all(color: const Color(0xFFDDDCE6)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 17, color: AppTheme.textSoft),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Edit',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textSoft,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                        if (!isCompleted) const SizedBox(width: 9),
+
+                        // Lifecycle Action: Start / Pause / Resume
+                        if (task.status == TaskStatus.todo)
+                          Expanded(
+                            child: InkWell(
+                              onTap: _handleStart,
+                              borderRadius: BorderRadius.circular(11),
+                              child: Container(
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surface,
+                                  borderRadius: BorderRadius.circular(11),
+                                  border: Border.all(color: const Color(0xFFDDDCE6)),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.play_arrow_rounded, size: 18, color: AppTheme.textSoft),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Start',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.textSoft,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (task.status == TaskStatus.inProgress)
+                          Expanded(
+                            child: InkWell(
+                              onTap: _handlePause,
+                              borderRadius: BorderRadius.circular(11),
+                              child: Container(
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surface,
+                                  borderRadius: BorderRadius.circular(11),
+                                  border: Border.all(color: const Color(0xFFDDDCE6)),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.pause_rounded, size: 18, color: AppTheme.textSoft),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Pause',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.textSoft,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (task.status == TaskStatus.paused)
+                          Expanded(
+                            child: InkWell(
+                              onTap: _handleResume,
+                              borderRadius: BorderRadius.circular(11),
+                              child: Container(
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surface,
+                                  borderRadius: BorderRadius.circular(11),
+                                  border: Border.all(color: const Color(0xFFDDDCE6)),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.play_arrow_rounded, size: 18, color: AppTheme.textSoft),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Resume',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.textSoft,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        if (!isCompleted) const SizedBox(width: 9),
+
+                        // Complete Button (Primary)
+                        if (!isCompleted)
+                          Expanded(
+                            flex: 2,
+                            child: InkWell(
+                              onTap: _handleComplete,
+                              borderRadius: BorderRadius.circular(11),
+                              child: Container(
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary,
+                                  borderRadius: BorderRadius.circular(11),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x386356D9),
+                                      blurRadius: 12,
+                                      offset: Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.check_rounded, size: 18, color: Colors.white),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Complete',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-        _Section(
-          title: 'Description',
-          child: AppCard(
-            padding: const EdgeInsets.all(15),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 2),
-                  child: Icon(Icons.article_outlined, size: 18, color: TaskColors.primary),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Text(
-                    task.description.trim().isEmpty
-                        ? 'No description provided.'
-                        : task.description,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      height: 1.6,
-                      color: TaskColors.body,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        _Section(
-          title: 'Task information',
-          child: AppCard(
-            child: Column(
-              children: [
-                _InfoRow(
-                  left: InfoTile(
-                    icon: Icons.person_outline_rounded,
-                    label: 'Assignee',
-                    child: assignee == null
-                        ? const _ValueText('Unassigned')
-                        : Row(
-                            children: [
-                              AvatarWidget.fromMember(assignee, radius: 13.5, fontSize: 8.5),
-                              const SizedBox(width: 6),
-                              Expanded(child: _ValueText(assignee.name)),
-                            ],
-                          ),
-                  ),
-                  right: InfoTile(
-                    icon: Icons.flag_outlined,
-                    label: 'Priority',
-                    child: _ValueText(task.priority.value),
-                  ),
-                ),
-                const _RowDivider(),
-                _InfoRow(
-                  left: InfoTile(
-                    icon: Icons.calendar_today_outlined,
-                    label: 'Deadline',
-                    child: _ValueText(formatDeadline(task.deadline)),
-                  ),
-                  right: InfoTile(
-                    icon: Icons.fact_check_outlined,
-                    label: 'Task Status',
-                    child: _ValueText(task.status.value),
-                  ),
-                ),
-                const _RowDivider(),
-                _InfoRow(
-                  left: InfoTile(
-                    icon: SlaBadge.iconFor(sla),
-                    label: 'SLA Status',
-                    child: SlaBadge(status: sla, compact: true),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        _buildActions(task),
-      ],
-    );
-  }
-
-  /// Edit is always shown, like the design. The status action depends on the
-  /// status (Start, Pause or Resume) and Complete is shown until completed.
-  Widget _buildActions(Task task) {
-    final Widget? statusAction = switch (task.status) {
-      TaskStatus.todo => AppButton(
-          label: 'Start',
-          icon: Icons.play_arrow_rounded,
-          variant: AppButtonVariant.secondary,
-          onPressed: _isBusy ? null : () => _runAction(() => _service.startTask(task.id)),
-        ),
-      TaskStatus.inProgress => AppButton(
-          label: 'Pause',
-          icon: Icons.pause_rounded,
-          variant: AppButtonVariant.secondary,
-          onPressed: _isBusy ? null : () => _runAction(() => _service.pauseTask(task.id)),
-        ),
-      TaskStatus.paused => AppButton(
-          label: 'Resume',
-          icon: Icons.refresh_rounded,
-          variant: AppButtonVariant.secondary,
-          onPressed: _isBusy ? null : () => _runAction(() => _service.resumeTask(task.id)),
-        ),
-      TaskStatus.completed => null,
-    };
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 24),
-      child: Row(
-        children: [
-          AppButton(
-            label: 'Edit',
-            icon: Icons.edit_outlined,
-            variant: AppButtonVariant.secondary,
-            onPressed: _isBusy ? null : _onEdit,
-          ),
-          if (statusAction != null) ...[
-            const SizedBox(width: 9),
-            statusAction,
-          ],
-          if (task.status != TaskStatus.completed) ...[
-            const SizedBox(width: 9),
-            Expanded(
-              child: AppButton(
-                label: 'Complete',
-                icon: Icons.check_rounded,
-                onPressed: _isBusy
-                    ? null
-                    : () => _runAction(() => _service.completeTask(task.id)),
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
-}
 
-/// A titled block with 24px above it (.detail-section).
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDetailItem({
+    required IconData icon,
+    required String label,
+    required Widget valueWidget,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(minHeight: 67),
+      child: Row(
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: TaskColors.heading,
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceSoft,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 17, color: AppTheme.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 9,
+                    color: AppTheme.textFaint,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                valueWidget,
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          child,
         ],
-      ),
-    );
-  }
-}
-
-/// Two column row with a vertical divider. A missing right tile stays empty,
-/// as in the design.
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.left, this.right});
-
-  final Widget left;
-  final Widget? right;
-
-  @override
-  Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: left),
-          const VerticalDivider(width: 1, thickness: 1, color: TaskColors.cardBorder),
-          Expanded(child: right ?? const SizedBox.shrink()),
-        ],
-      ),
-    );
-  }
-}
-
-class _RowDivider extends StatelessWidget {
-  const _RowDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Divider(height: 1, thickness: 1, color: TaskColors.cardBorder);
-  }
-}
-
-class _ValueText extends StatelessWidget {
-  const _ValueText(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        fontSize: 10.5,
-        fontWeight: FontWeight.w600,
-        height: 1.25,
-        color: TaskColors.heading,
       ),
     );
   }

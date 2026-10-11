@@ -4,20 +4,17 @@ import '../models/task.dart';
 import '../models/team_member.dart';
 import '../services/task_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
 import '../widgets/avatar_widget.dart';
-import '../utils/date_format.dart';
-import '../widgets/priority_badge.dart';
-import '../widgets/sla_badge.dart';
-import '../widgets/status_badge.dart';
-import '../widgets/task_colors.dart';
 import 'task_details_screen.dart';
 import 'user_selection_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final TeamMember currentUser;
   final TeamMember? memberToView;
+  final VoidCallback? onBack;
 
-  const ProfileScreen({super.key, required this.currentUser, this.memberToView});
+  const ProfileScreen({super.key, required this.currentUser, this.memberToView, this.onBack});
 
   @override
   State<ProfileScreen> createState() => ProfileScreenState();
@@ -57,14 +54,6 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  /// Opens Task Details and reloads the list if the task was changed there.
-  Future<void> _openTask(Task task) async {
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => TaskDetailsScreen(taskId: task.id)),
-    );
-    if (changed == true && mounted) loadMemberTasks();
-  }
-
   void _switchUser() {
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const UserSelectionScreen()),
@@ -86,57 +75,19 @@ class ProfileScreenState extends State<ProfileScreen> {
     final workloadLevel = _taskService.getWorkloadLevel(activeTasks.length);
     final bars = _taskService.getWorkloadBars(workloadLevel);
 
+    final onBack = widget.onBack ??
+        (Navigator.of(context).canPop() ? () => Navigator.of(context).pop() : null);
+
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: RefreshIndicator(
-        onRefresh: loadMemberTasks,
-        color: AppTheme.primary,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withAlpha(31),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                ),
-                padding: const EdgeInsets.only(bottom: 1),
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(21, MediaQuery.of(context).padding.top + 28, 21, 24),
-                  decoration: const BoxDecoration(
-                    color: AppTheme.chrome,
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          !_isViewingSelf
-                              ? GestureDetector(
-                                  onTap: () => Navigator.of(context).pop(),
-                                  child: Container(
-                                    width: 37,
-                                    height: 37,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withAlpha(178),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: AppTheme.primary.withAlpha(31)),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryDeep, size: 16),
-                                  ),
-                                )
-                              : const Text(
-                                  'Profile',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryDeep,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                          if (_isViewingSelf)
-                            GestureDetector(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppHeader(
+            onBack: onBack,
+            actions: [
+              if (_isViewingSelf)
+                GestureDetector(
                               onTap: _switchUser,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -160,9 +111,40 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 11),
+            ],
+            child: Text(
+              _isViewingSelf ? 'Profile' : _displayMember.firstName,
+              style: const TextStyle(
+                color: AppTheme.text,
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.035 * 23,
+                height: 1.2,
+              ),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+        onRefresh: loadMemberTasks,
+        color: AppTheme.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withAlpha(31),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                ),
+                padding: const EdgeInsets.only(bottom: 1),
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(21, 18, 21, 24),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.chrome,
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -195,7 +177,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(21, 22, 21, 116),
+              padding: const EdgeInsets.fromLTRB(21, 22, 21, 40),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   Container(
@@ -299,19 +281,46 @@ class ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 13),
                   if (_memberTasks.isEmpty)
-                    const _EmptyAssignedTasks()
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      alignment: Alignment.center,
+                      child: const Column(
+                        children: [
+                          Icon(Icons.assignment, size: 23, color: AppTheme.textFaint),
+                          SizedBox(height: 8),
+                          Text('No assigned tasks', style: TextStyle(color: AppTheme.text, fontSize: 12.5, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 2),
+                          Text('This member’s workload is currently clear.', style: TextStyle(color: AppTheme.textFaint, fontSize: 11.5)),
+                        ],
+                      ),
+                    )
                   else
                     ..._memberTasks.map((t) => _ProfileTaskCard(
                           task: t,
-                          member: _displayMember,
                           slaStatus: _taskService.getSlaStatus(t, now: DateTime.now()),
-                          onTap: () => _openTask(t),
+                          onTap: () async {
+                            final changed = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TaskDetailsScreen(
+                                  taskId: t.id,
+                                  currentUser: widget.currentUser,
+                                ),
+                              ),
+                            );
+                            if (changed == true) {
+                              loadMemberTasks();
+                            }
+                          },
                         )),
                 ]),
               ),
             ),
           ],
         ),
+      ),
+          ),
+        ],
       ),
     );
   }
@@ -359,185 +368,93 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-/// Task card from the design: tinted by SLA status, with the workflow status,
-/// the SLA mark, and the assignee, priority and deadline in the footer.
 class _ProfileTaskCard extends StatelessWidget {
   final Task task;
-  final TeamMember member;
   final SlaStatus slaStatus;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ProfileTaskCard({
     required this.task,
-    required this.member,
     required this.slaStatus,
-    required this.onTap,
+    this.onTap,
   });
-
-  Color get _deadlineColor => switch (slaStatus) {
-        SlaStatus.overdue => TaskColors.overdue,
-        SlaStatus.atRisk => TaskColors.atRiskText,
-        _ => TaskColors.cardDetail,
-      };
 
   @override
   Widget build(BuildContext context) {
-    const detailStyle = TextStyle(
-      fontSize: 9.5,
-      fontWeight: FontWeight.w500,
-      color: TaskColors.cardDetail,
-    );
+    final slaColor = AppTheme.getSlaColor(slaStatus);
+    
+    String getSlaLabel(SlaStatus status) {
+      switch (status) {
+        case SlaStatus.onTrack: return 'ON TRACK';
+        case SlaStatus.atRisk: return 'AT RISK';
+        case SlaStatus.overdue: return 'OVERDUE';
+        case SlaStatus.completed: return 'COMPLETED';
+      }
+    }
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    String getStatusLabel(TaskStatus status) {
+      switch (status) {
+        case TaskStatus.todo: return 'TODO';
+        case TaskStatus.inProgress: return 'IN PROGRESS';
+        case TaskStatus.paused: return 'PAUSED';
+        case TaskStatus.completed: return 'COMPLETED';
+      }
+    }
+
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
-          color: SlaBadge.softColorFor(slaStatus),
-          border: Border.all(color: SlaBadge.borderColorFor(slaStatus)),
+          color: AppTheme.surface,
           borderRadius: BorderRadius.circular(15),
-          boxShadow: const [
-            BoxShadow(color: Color(0x0A1D1D2F), blurRadius: 18, offset: Offset(0, 5)),
-          ],
+          border: Border.all(color: const Color(0x0F202030)),
+          boxShadow: const [BoxShadow(color: Color(0x0A1D1D2F), blurRadius: 22, offset: Offset(0, 6))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Text(
                     task.title,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                      height: 1.35,
-                      color: AppTheme.text,
-                    ),
+                    style: const TextStyle(color: AppTheme.text, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.35),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Padding(
-                  padding: EdgeInsets.only(top: 1),
-                  child: Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFAAA8B6)),
+                const Icon(Icons.chevron_right, size: 18, color: AppTheme.textFaint),
+              ],
+            ),
+          const SizedBox(height: 7),
+          Row(
+            children: [
+              Text(
+                getStatusLabel(task.status), 
+                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textSoft)
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: slaColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: slaColor.withAlpha(51)),
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                StatusBadge(status: task.status),
-                const SizedBox(width: 7),
-                SlaBadge(status: slaStatus, compact: true),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.only(top: 11),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0x17505062))),
+                child: Text(
+                  getSlaLabel(slaStatus),
+                  style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: slaColor),
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        AvatarWidget.fromMember(member, radius: 13.5, fontSize: 8.5),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            member.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: detailStyle,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  PriorityBadge(priority: task.priority),
-                  const SizedBox(width: 12),
-                  Icon(Icons.calendar_today_outlined, size: 14, color: _deadlineColor),
-                  const SizedBox(width: 4),
-                  Text(
-                    formatDeadline(task.deadline),
-                    style: detailStyle.copyWith(color: _deadlineColor),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }
-
-/// Empty state from the design: white card, dashed border, purple icon.
-class _EmptyAssignedTasks extends StatelessWidget {
-  const _EmptyAssignedTasks();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      foregroundPainter: const _DashedBorderPainter(color: Color(0xFFD7D6E0), radius: 15),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.fact_check_outlined, size: 23, color: AppTheme.primary),
-            SizedBox(height: 6),
-            Text(
-              'No assigned tasks',
-              style: TextStyle(fontSize: 12, color: AppTheme.textSoft),
-            ),
-            SizedBox(height: 6),
-            Text(
-              'This member’s workload is currently clear.',
-              style: TextStyle(fontSize: 10.5, color: AppTheme.textFaint),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter({required this.color, required this.radius});
-
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)));
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        canvas.drawPath(metric.extractPath(distance, distance + 4), paint);
-        distance += 7;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.radius != radius;
 }
