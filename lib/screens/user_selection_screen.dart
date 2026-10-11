@@ -64,69 +64,75 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         children: [
           // Welcome Chrome Header
           Container(
-            padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 30, 24, 27),
             decoration: BoxDecoration(
-              color: AppTheme.chrome,
+              color: AppTheme.primary.withAlpha(31), // 12% opacity border
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
-              border: Border(bottom: BorderSide(color: AppTheme.primary.withAlpha(31))), // 12% opacity
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary,
-                        borderRadius: BorderRadius.circular(9),
+            padding: const EdgeInsets.only(bottom: 1),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 30, 24, 27),
+              decoration: const BoxDecoration(
+                color: AppTheme.chrome,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
                       ),
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'SLA Tracker',
-                      style: TextStyle(
-                        color: AppTheme.primaryDeep,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(width: 8),
+                      const Text(
+                        'SLA Tracker',
+                        style: TextStyle(
+                          color: AppTheme.primaryDeep,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 35),
+                  const Text(
+                    'WELCOME',
+                    style: TextStyle(
+                      color: AppTheme.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 35),
-                const Text(
-                  'WELCOME',
-                  style: TextStyle(
-                    color: AppTheme.primary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.8,
                   ),
-                ),
-                const SizedBox(height: 7),
-                const Text(
-                  'Who are you using the app as?',
-                  style: TextStyle(
-                    color: AppTheme.text,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.875, // -0.035em * 25
-                    height: 1.2,
+                  const SizedBox(height: 7),
+                  const Text(
+                    'Who are you using the app as?',
+                    style: TextStyle(
+                      color: AppTheme.text,
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.875, // -0.035em * 25
+                      height: 1.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Select your team profile to continue. This simply personalizes your task view—there’s no account or sign-in required.',
-                  style: TextStyle(
-                    color: Color(0xFF615E78),
-                    fontSize: 11.5,
-                    height: 1.6,
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Select your team profile to continue. This simply personalizes your task view—there’s no account or sign-in required.',
+                    style: TextStyle(
+                      color: Color(0xFF615E78),
+                      fontSize: 11.5,
+                      height: 1.6,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           // Scrollable Member Selection
@@ -191,7 +197,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                           ),
                           child: Row(
                             children: [
-                              AvatarWidget.fromMember(member, radius: 20), // Creates 40x40 avatar
+                              AvatarWidget.fromMember(member, radius: 17, fontSize: 10), // 34x34 avatar with 10px font per Make export
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
