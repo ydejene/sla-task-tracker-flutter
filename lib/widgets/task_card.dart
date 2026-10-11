@@ -236,9 +236,10 @@ class TaskCard extends StatelessWidget {
                 const SizedBox(width: 12),
 
                 // Deadline
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     Icon(
                       Icons.calendar_today_outlined,
                       size: 13,
@@ -247,8 +248,11 @@ class TaskCard extends StatelessWidget {
                           : const Color(0xFF747483),
                     ),
                     const SizedBox(width: 4),
-                    Text(
+                    Flexible(
+                      child: Text(
                       formatDeadline(task.deadline),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w600,
@@ -256,8 +260,10 @@ class TaskCard extends StatelessWidget {
                             ? slaColor
                             : const Color(0xFF747483),
                       ),
+                      ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
