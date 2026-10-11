@@ -7,7 +7,6 @@ import '../models/team_member.dart';
 import '../services/database_service.dart';
 import '../services/task_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_header.dart';
 import '../widgets/task_card.dart';
 
 class TaskFormScreen extends StatefulWidget {
@@ -177,37 +176,77 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppHeader(
-            onBack: () => Navigator.pop(context, false),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isEditing ? 'Edit Task' : 'Create Task',
-                  style: const TextStyle(
-                    color: AppTheme.text,
-                    fontSize: 23,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.035 * 23,
-                    height: 1.2,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Workflow Header matching prototype
+            Container(
+              decoration: const BoxDecoration(
+                color: AppTheme.chrome,
+                border: Border(
+                  bottom: BorderSide(color: Color(0x1F6356D9), width: 1),
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(21, 52, 21, 20),
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: () => Navigator.pop(context, false),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 37,
+                      height: 37,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(180),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0x1F6356D9)),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 16,
+                        color: AppTheme.primaryDeep,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isEditing
-                      ? 'Update the task information'
-                      : 'Add the essentials to get started',
-                  style: const TextStyle(color: Color(0xFF5E5B78), fontSize: 12.5),
-                ),
-              ],
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isEditing ? 'Edit Task' : 'Create Task',
+                          style: const TextStyle(
+                            color: AppTheme.text,
+                            fontSize: 23,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.035 * 23,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          isEditing
+                              ? 'Update the task information'
+                              : 'Add the essentials to get started',
+                          style: const TextStyle(
+                            color: Color(0xFF5E5B78),
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child:
+
             // Form Card
             Padding(
               padding: const EdgeInsets.fromLTRB(21, 22, 21, 40),
@@ -619,9 +658,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 ],
               ),
             ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
