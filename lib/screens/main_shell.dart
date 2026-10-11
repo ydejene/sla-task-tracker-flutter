@@ -17,6 +17,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0; 
+  final GlobalKey<ProfileScreenState> _profileKey = GlobalKey<ProfileScreenState>();
 
   late final List<Widget> _screens;
 
@@ -27,7 +28,7 @@ class _MainShellState extends State<MainShell> {
       const DashboardScreen(),
       const TasksScreen(),
       const TeamScreen(),
-      ProfileScreen(currentUser: widget.currentUser),
+      ProfileScreen(key: _profileKey, currentUser: widget.currentUser),
     ];
   }
 
@@ -35,6 +36,9 @@ class _MainShellState extends State<MainShell> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 3) {
+      _profileKey.currentState?.loadMemberTasks();
+    }
   }
 
   Widget _buildNavItem(int index, IconData iconOutlined, IconData iconFilled, String label) {

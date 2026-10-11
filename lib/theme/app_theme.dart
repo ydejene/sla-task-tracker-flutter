@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/enums.dart';
+import '../models/enums.dart';
 
 class AppTheme {
   // Brand Colors
@@ -69,8 +69,8 @@ class AppTheme {
         elevation: 8,
       ),
       textTheme: const TextTheme(
-        headlineSmall: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 23, letterSpacing: -0.035),
-        titleLarge: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: -0.02),
+        headlineSmall: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 23, letterSpacing: -0.035 * 23),
+        titleLarge: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: -0.02 * 16),
         titleMedium: TextStyle(color: text, fontWeight: FontWeight.w600, fontSize: 14),
         bodyLarge: TextStyle(color: text, fontSize: 12.5),
         bodyMedium: TextStyle(color: textSoft, fontSize: 11.5),

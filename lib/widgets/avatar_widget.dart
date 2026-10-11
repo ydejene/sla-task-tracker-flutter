@@ -5,19 +5,22 @@ class AvatarWidget extends StatelessWidget {
   final String initials;
   final String colorToken;
   final double radius;
+  final double? fontSize;
 
   const AvatarWidget({
     super.key,
     required this.initials,
     required this.colorToken,
     this.radius = 18.0, // Default to ~medium (36x36)
+    this.fontSize,
   });
   
-  factory AvatarWidget.fromMember(TeamMember member, {double radius = 18.0}) {
+  factory AvatarWidget.fromMember(TeamMember member, {double radius = 18.0, double? fontSize}) {
     return AvatarWidget(
       initials: member.initials,
       colorToken: member.avatarColor,
       radius: radius,
+      fontSize: fontSize,
     );
   }
 
@@ -25,8 +28,8 @@ class AvatarWidget extends StatelessWidget {
     switch (colorToken) {
       case 'avatar-mint': return const Color(0xFFDFF2E9);
       case 'avatar-blue': return const Color(0xFFE2EBFB);
-      case 'avatar-violet': return const Color(0xFFEDE9FE); 
-      case 'avatar-sand': return const Color(0xFFFDF5E6); 
+      case 'avatar-violet': return const Color(0xFFEBE4FB); 
+      case 'avatar-sand': return const Color(0xFFF3EADB); 
       default: return const Color(0xFFE8E8EF); // --line fallback
     }
   }
@@ -35,14 +38,15 @@ class AvatarWidget extends StatelessWidget {
     switch (colorToken) {
       case 'avatar-mint': return const Color(0xFF267A54);
       case 'avatar-blue': return const Color(0xFF3D609B);
-      case 'avatar-violet': return const Color(0xFF5B21B6);
-      case 'avatar-sand': return const Color(0xFF9C6644);
+      case 'avatar-violet': return const Color(0xFF694A9D);
+      case 'avatar-sand': return const Color(0xFF8B6532);
       default: return const Color(0xFF666778); // --text-soft fallback
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final effectiveFontSize = fontSize ?? (radius * 0.8);
     return Container(
       width: radius * 2,
       height: radius * 2,
@@ -56,8 +60,8 @@ class AvatarWidget extends StatelessWidget {
         style: TextStyle(
           color: _getTextColor(),
           fontWeight: FontWeight.bold,
-          fontSize: radius * 0.8, // Approximation based on sizes
-          letterSpacing: -0.02,
+          fontSize: effectiveFontSize,
+          letterSpacing: -0.02 * effectiveFontSize,
         ),
       ),
     );
