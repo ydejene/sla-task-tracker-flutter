@@ -71,6 +71,13 @@ class DashboardScreenState extends State<DashboardScreen> {
     return '${weekdays[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
   }
 
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   String _formatTimeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 1) return 'just now';
@@ -169,7 +176,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Good morning, ${widget.currentUser.firstName}',
+            '${_greeting()}, ${widget.currentUser.firstName}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
