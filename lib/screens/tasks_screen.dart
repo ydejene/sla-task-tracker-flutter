@@ -121,7 +121,7 @@ class TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 2),
           Text(
-            '${_tasks.length} tasks across your team',
+            '${_tasks.length} ${_tasks.length == 1 ? 'task' : 'tasks'} across your team',
             style: const TextStyle(color: Color(0xFF5E5B78), fontSize: 12.5),
           ),
         ],

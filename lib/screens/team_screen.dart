@@ -93,7 +93,7 @@ class TeamScreenState extends State<TeamScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_members.length} team members',
+                  '${_members.length} team ${_members.length == 1 ? 'member' : 'members'}',
                   style: const TextStyle(color: Color(0xFF5E5B78), fontSize: 12.5),
                 ),
               ],
