@@ -228,7 +228,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              '$totalActive active tasks this week',
+                              '$totalActive active ${totalActive == 1 ? 'task' : 'tasks'}',
                               style: const TextStyle(
                                 fontSize: 11.5,
                                 color: AppTheme.textFaint,
@@ -358,7 +358,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                                       Text(
                                         atRiskCount + overdueCount == 0
                                             ? 'All active tasks are currently on track.'
-                                            : '${atRiskCount + overdueCount} tasks need attention to keep this week on track.',
+                                            : atRiskCount + overdueCount == 1
+                                                ? '1 task needs attention to stay on track.'
+                                                : '${atRiskCount + overdueCount} tasks need attention to stay on track.',
                                         style: const TextStyle(
                                           fontSize: 11.5,
                                           height: 1.45,
