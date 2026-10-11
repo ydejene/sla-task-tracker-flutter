@@ -611,7 +611,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Completed by ${_teamMembersMap[recentTask.assignedTo]?.firstName ?? "Team"} · ${_formatTimeAgo(recentTask.updatedAt)}',
+                                      _teamMembersMap[recentTask.assignedTo] == null
+                                          ? 'Completed · ${_formatTimeAgo(recentTask.updatedAt)}'
+                                          : 'Completed by ${_teamMembersMap[recentTask.assignedTo]!.firstName} · ${_formatTimeAgo(recentTask.updatedAt)}',
                                       style: const TextStyle(
                                         fontSize: 9.5,
                                         color: AppTheme.textFaint,
