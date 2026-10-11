@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'screens/user_selection_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
+  // Add ensuring initialized since we have SQLite bindings underneath if needed
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -12,13 +16,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SLA Task Tracker',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: const Scaffold(
-        body: Center(child: Text('SLA Task Tracker Workspace Initialized')),
-      ),
+      theme: AppTheme.lightTheme,
+      home: const UserSelectionScreen(),
     );
   }
 }
