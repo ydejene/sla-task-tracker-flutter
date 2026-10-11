@@ -248,4 +248,23 @@ class TaskService {
     }
     await _db.deleteTask(id);
   }
+
+  // --- Workload Logic ---
+
+  String getWorkloadLevel(int activeTasksCount) {
+    if (activeTasksCount <= 1) return 'Light';
+    if (activeTasksCount <= 2) return 'Balanced';
+    if (activeTasksCount <= 4) return 'Focused';
+    return 'Full';
+  }
+
+  int getWorkloadBars(String level) {
+    switch (level) {
+      case 'Light': return 1;
+      case 'Balanced': return 2;
+      case 'Focused': return 3;
+      case 'Full': return 4;
+      default: return 1;
+    }
+  }
 }
