@@ -30,6 +30,10 @@ class TaskCard extends StatelessWidget {
     if (isToday) {
       return 'Today, $timeStr';
     }
+    final today = DateTime.utc(now.year, now.month, now.day);
+    final daysAway = DateTime.utc(dt.year, dt.month, dt.day).difference(today).inDays;
+    if (daysAway == 1) return 'Tomorrow, $timeStr';
+    if (daysAway == -1) return 'Yesterday, $timeStr';
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[dt.month - 1]} ${dt.day}, $timeStr';
   }
