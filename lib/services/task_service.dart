@@ -29,13 +29,9 @@ class TaskService {
     return await _db.getAllMembers();
   }
 
-  Future<List<TeamMember>> getAllTeamMembers() => getAllMembers();
-
   Future<TeamMember?> getMemberById(String id) async {
     return await _db.getMemberById(id);
   }
-
-  Future<TeamMember?> getTeamMemberById(String id) => getMemberById(id);
 
   // --- SLA Logic ---
 
@@ -64,10 +60,6 @@ class TaskService {
     } else {
       return SlaStatus.onTrack;
     }
-  }
-
-  SlaStatus computeSlaStatus(Task task, [DateTime? now]) {
-    return getSlaStatus(task, now: now ?? _clock());
   }
 
   // --- Mutations ---

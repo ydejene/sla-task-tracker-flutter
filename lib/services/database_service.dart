@@ -119,8 +119,6 @@ class DatabaseService {
     }
   }
 
-  Future<List<TeamMember>> getAllTeamMembers() => getAllMembers();
-
   Future<TeamMember?> getMemberById(String id) async {
     try {
       final db = await database;
@@ -138,8 +136,6 @@ class DatabaseService {
       throw DatabaseException('Failed to fetch team member with ID $id: ${e.toString()}');
     }
   }
-
-  Future<TeamMember?> getTeamMemberById(String id) => getMemberById(id);
 
   // --- Tasks ---
 
