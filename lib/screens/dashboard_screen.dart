@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/enums.dart';
@@ -156,6 +158,13 @@ class DashboardScreenState extends State<DashboardScreen> {
       recentTask = sortedCompleted.first;
     }
 
+    // Responsive layout: tighter spacing on small phones, and a centred
+    // column of at most 640px on tablets and wide screens.
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 360;
+    final sidePadding = math.max(isCompact ? 14.0 : 21.0, (screenWidth - 640) / 2);
+    final ringSize = isCompact ? 68.0 : 84.0;
+
     final header = AppHeader(
       onBack: widget.onBack,
       actions: [
@@ -216,7 +225,7 @@ class DashboardScreenState extends State<DashboardScreen> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
-                padding: const EdgeInsets.fromLTRB(21, 22, 21, 96),
+                padding: EdgeInsets.fromLTRB(sidePadding, 22, sidePadding, 96),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -268,19 +277,19 @@ class DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           // Top Health Overview
                           Padding(
-                            padding: const EdgeInsets.all(18),
+                            padding: EdgeInsets.all(isCompact ? 14 : 18),
                             child: Row(
                               children: [
                                 // Circular Progress Ring
                                 SizedBox(
-                                  width: 84,
-                                  height: 84,
+                                  width: ringSize,
+                                  height: ringSize,
                                   child: Stack(
                                     alignment: Alignment.center,
                                     children: [
                                       SizedBox(
-                                        width: 74,
-                                        height: 74,
+                                        width: ringSize - 10,
+                                        height: ringSize - 10,
                                         child: CircularProgressIndicator(
                                           value: healthyPercentage / 100,
                                           backgroundColor: AppTheme.primarySoft,
@@ -316,7 +325,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 17),
+                                SizedBox(width: isCompact ? 12 : 17),
 
                                 // Health Text Copy
                                 Expanded(
@@ -340,13 +349,17 @@ class DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 5),
-                                          const Text(
-                                            'OVERALL TASK HEALTH',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w700,
-                                              letterSpacing: 0.04 * 10,
-                                              color: AppTheme.primary,
+                                          const Flexible(
+                                            child: Text(
+                                              'OVERALL TASK HEALTH',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 0.04 * 10,
+                                                color: AppTheme.primary,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -732,7 +745,9 @@ class DashboardScreenState extends State<DashboardScreen> {
   }) {
     return Container(
       height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 15),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.sizeOf(context).width < 360 ? 10 : 15,
+      ),
       child: Row(
         children: [
           Container(
@@ -749,6 +764,8 @@ class DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 11,
                 color: AppTheme.textSoft,
