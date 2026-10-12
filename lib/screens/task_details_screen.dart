@@ -147,7 +147,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Task'),
-        content: const Text('Are you sure you want to delete this task? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this task? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -177,10 +179,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppTheme.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppTheme.red),
     );
   }
 
@@ -221,7 +220,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               onBack: () => Navigator.pop(context, _hasModified),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: AppTheme.textFaint),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: AppTheme.textFaint,
+                  ),
                   onPressed: _handleDelete,
                   tooltip: 'Delete task',
                 ),
@@ -240,499 +242,609 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             Expanded(
               child: SingleChildScrollView(
                 child:
-              // Detail Content
-              Padding(
-                padding: const EdgeInsets.fromLTRB(21, 24, 21, 40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Detail Hero
-                    const Text(
-                      'TASK',
-                      style: TextStyle(
-                        color: AppTheme.primary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.08 * 10,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      task.title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.03 * 22,
-                        height: 1.25,
-                        color: AppTheme.text,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Detail Status Row
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                          decoration: BoxDecoration(
-                            color: _getSurfaceBg(slaStatus),
-                            borderRadius: BorderRadius.circular(11),
-                            border: Border.all(color: _getBorderColor(slaStatus)),
+                    // Detail Content
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(21, 24, 21, 40),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Detail Hero
+                          const Text(
+                            'TASK',
+                            style: TextStyle(
+                              color: AppTheme.primary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.08 * 10,
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          const SizedBox(height: 7),
+                          Text(
+                            task.title,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.03 * 22,
+                              height: 1.25,
+                              color: AppTheme.text,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Detail Status Row
+                          Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 9,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0x17707080),
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(color: const Color(0x14707080)),
-                                ),
-                                child: Text(
-                                  task.status.value,
-                                  style: const TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF686878),
+                                  color: _getSurfaceBg(slaStatus),
+                                  borderRadius: BorderRadius.circular(11),
+                                  border: Border.all(
+                                    color: _getBorderColor(slaStatus),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 25,
-                                    height: 25,
-                                    decoration: BoxDecoration(
-                                      color: slaColor,
-                                      shape: BoxShape.circle,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0x17707080),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                        border: Border.all(
+                                          color: const Color(0x14707080),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        task.status.value,
+                                        style: const TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF686878),
+                                        ),
+                                      ),
                                     ),
-                                    alignment: Alignment.center,
-                                    child: Icon(
-                                      _getSlaIcon(slaStatus),
-                                      size: 14,
-                                      color: Colors.white,
+                                    const SizedBox(width: 10),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 25,
+                                          height: 25,
+                                          decoration: BoxDecoration(
+                                            color: slaColor,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Icon(
+                                            _getSlaIcon(slaStatus),
+                                            size: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          slaStatus.value,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: slaColor,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    slaStatus.value,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: slaColor,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                    // Description Section
-                    const Text(
-                      'Description',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.text,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surface,
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: const Color(0x0F202030)),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0A1D1D2F),
-                            blurRadius: 22,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.description_outlined,
-                            size: 18,
-                            color: AppTheme.primary,
-                          ),
-                          const SizedBox(width: 11),
-                          Expanded(
-                            child: Text(
-                              task.description.isEmpty
-                                  ? 'No description provided.'
-                                  : task.description,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                height: 1.6,
-                                color: AppTheme.textSoft,
-                              ),
+                          // Description Section
+                          const Text(
+                            'Description',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.text,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Task Information Section
-                    const Text(
-                      'Task information',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.text,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.surface,
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: const Color(0x0F202030)),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0A1D1D2F),
-                            blurRadius: 22,
-                            offset: Offset(0, 6),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.all(15),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surface,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: const Color(0x0F202030),
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x0A1D1D2F),
+                                  blurRadius: 22,
+                                  offset: Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.description_outlined,
+                                  size: 18,
+                                  color: AppTheme.primary,
+                                ),
+                                const SizedBox(width: 11),
+                                Expanded(
+                                  child: Text(
+                                    task.description.isEmpty
+                                        ? 'No description provided.'
+                                        : task.description,
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      height: 1.6,
+                                      color: AppTheme.textSoft,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildDetailItem(
-                                  icon: Icons.person_outline,
-                                  label: 'Assignee',
-                                  valueWidget: _assignee != null
-                                      ? Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            AvatarWidget.fromMember(
-                                              _assignee!,
-                                              radius: 10,
-                                              fontSize: 8.5,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Flexible(
-                                              child: Text(
-                                                _assignee!.name,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
+
+                          const SizedBox(height: 24),
+
+                          // Task Information Section
+                          const Text(
+                            'Task information',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.text,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppTheme.surface,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: const Color(0x0F202030),
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x0A1D1D2F),
+                                  blurRadius: 22,
+                                  offset: Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildDetailItem(
+                                        icon: Icons.person_outline,
+                                        label: 'Assignee',
+                                        valueWidget: _assignee != null
+                                            ? Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  AvatarWidget.fromMember(
+                                                    _assignee!,
+                                                    radius: 10,
+                                                    fontSize: 8.5,
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Flexible(
+                                                    child: Text(
+                                                      _assignee!.name,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        fontSize: 10.5,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: AppTheme.text,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            : const Text(
+                                                'Unassigned',
+                                                style: TextStyle(
                                                   fontSize: 10.5,
                                                   fontWeight: FontWeight.w600,
-                                                  color: AppTheme.text,
+                                                  color: AppTheme.textSoft,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 67,
+                                      color: AppTheme.line,
+                                    ),
+                                    Expanded(
+                                      child: _buildDetailItem(
+                                        icon: Icons.flag_outlined,
+                                        label: 'Priority',
+                                        valueWidget: Text(
+                                          task.priority.value,
+                                          style: const TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.text,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(height: 1, color: AppTheme.line),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildDetailItem(
+                                        icon: Icons.calendar_today_outlined,
+                                        label: 'Deadline',
+                                        valueWidget: Text(
+                                          TaskCard.formatDeadline(
+                                            task.deadline,
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.text,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 67,
+                                      color: AppTheme.line,
+                                    ),
+                                    Expanded(
+                                      child: _buildDetailItem(
+                                        icon: Icons.checklist_rounded,
+                                        label: 'Task Status',
+                                        valueWidget: Text(
+                                          task.status.value,
+                                          style: const TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.text,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(height: 1, color: AppTheme.line),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildDetailItem(
+                                        icon: _getSlaIcon(slaStatus),
+                                        label: 'SLA Status',
+                                        valueWidget: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              width: 18,
+                                              height: 18,
+                                              decoration: BoxDecoration(
+                                                color: slaColor,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Icon(
+                                                _getSlaIcon(slaStatus),
+                                                size: 10,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              slaStatus.value,
+                                              style: TextStyle(
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: slaColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Actions Row
+                          if (!isCompleted)
+                            Row(
+                              children: [
+                                // Edit button (secondary)
+                                Expanded(
+                                  flex: 3,
+                                  child: InkWell(
+                                    onTap: () async {
+                                      final updated =
+                                          await Navigator.push<bool>(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  TaskFormScreen(
+                                                    task: task,
+                                                    currentUser:
+                                                        widget.currentUser,
+                                                  ),
+                                            ),
+                                          );
+                                      if (updated == true) {
+                                        _hasModified = true;
+                                        _loadTaskDetails();
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(11),
+                                    child: Container(
+                                      height: 42,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.surface,
+                                        borderRadius: BorderRadius.circular(11),
+                                        border: Border.all(
+                                          color: const Color(0xFFDDDCE6),
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.edit_outlined,
+                                            size: 17,
+                                            color: AppTheme.textSoft,
+                                          ),
+                                          SizedBox(width: 5),
+                                          Flexible(
+                                            child: Text(
+                                              'Edit',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppTheme.textSoft,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(width: 9),
+
+                                // Lifecycle Action: Start / Pause / Resume (secondary)
+                                if (task.status == TaskStatus.todo)
+                                  Expanded(
+                                    flex: 4,
+                                    child: InkWell(
+                                      onTap: _handleStart,
+                                      borderRadius: BorderRadius.circular(11),
+                                      child: Container(
+                                        height: 42,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.surface,
+                                          borderRadius: BorderRadius.circular(
+                                            11,
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(0xFFDDDCE6),
+                                          ),
+                                        ),
+                                        child: const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.play_arrow_rounded,
+                                              size: 18,
+                                              color: AppTheme.textSoft,
+                                            ),
+                                            SizedBox(width: 5),
+                                            Flexible(
+                                              child: Text(
+                                                'Start',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppTheme.textSoft,
                                                 ),
                                               ),
                                             ),
                                           ],
-                                        )
-                                      : const Text(
-                                          'Unassigned',
-                                          style: TextStyle(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppTheme.textSoft,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                else if (task.status == TaskStatus.inProgress)
+                                  Expanded(
+                                    flex: 4,
+                                    child: InkWell(
+                                      onTap: _handlePause,
+                                      borderRadius: BorderRadius.circular(11),
+                                      child: Container(
+                                        height: 42,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.surface,
+                                          borderRadius: BorderRadius.circular(
+                                            11,
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(0xFFDDDCE6),
                                           ),
                                         ),
-                                ),
-                              ),
-                              Container(width: 1, height: 67, color: AppTheme.line),
-                              Expanded(
-                                child: _buildDetailItem(
-                                  icon: Icons.flag_outlined,
-                                  label: 'Priority',
-                                  valueWidget: Text(
-                                    task.priority.value,
-                                    style: const TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.text,
+                                        child: const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.pause_rounded,
+                                              size: 18,
+                                              color: AppTheme.textSoft,
+                                            ),
+                                            SizedBox(width: 5),
+                                            Flexible(
+                                              child: Text(
+                                                'Pause',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppTheme.textSoft,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(height: 1, color: AppTheme.line),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildDetailItem(
-                                  icon: Icons.calendar_today_outlined,
-                                  label: 'Deadline',
-                                  valueWidget: Text(
-                                    TaskCard.formatDeadline(task.deadline),
-                                    style: const TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.text,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Container(width: 1, height: 67, color: AppTheme.line),
-                              Expanded(
-                                child: _buildDetailItem(
-                                  icon: Icons.checklist_rounded,
-                                  label: 'Task Status',
-                                  valueWidget: Text(
-                                    task.status.value,
-                                    style: const TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.text,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(height: 1, color: AppTheme.line),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildDetailItem(
-                                  icon: _getSlaIcon(slaStatus),
-                                  label: 'SLA Status',
-                                  valueWidget: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 18,
-                                        height: 18,
+                                  )
+                                else if (task.status == TaskStatus.paused)
+                                  Expanded(
+                                    flex: 4,
+                                    child: InkWell(
+                                      onTap: _handleResume,
+                                      borderRadius: BorderRadius.circular(11),
+                                      child: Container(
+                                        height: 42,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: slaColor,
-                                          shape: BoxShape.circle,
+                                          color: AppTheme.surface,
+                                          borderRadius: BorderRadius.circular(
+                                            11,
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(0xFFDDDCE6),
+                                          ),
                                         ),
-                                        alignment: Alignment.center,
-                                        child: Icon(
-                                          _getSlaIcon(slaStatus),
-                                          size: 10,
-                                          color: Colors.white,
+                                        child: const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.play_arrow_rounded,
+                                              size: 18,
+                                              color: AppTheme.textSoft,
+                                            ),
+                                            SizedBox(width: 5),
+                                            Flexible(
+                                              child: Text(
+                                                'Resume',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppTheme.textSoft,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        slaStatus.value,
-                                        style: TextStyle(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: slaColor,
-                                        ),
+                                    ),
+                                  ),
+
+                                const SizedBox(width: 9),
+
+                                // Complete Button (Primary)
+                                Expanded(
+                                  flex: 5,
+                                  child: InkWell(
+                                    onTap: _handleComplete,
+                                    borderRadius: BorderRadius.circular(11),
+                                    child: Container(
+                                      height: 42,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
                                       ),
-                                    ],
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primary,
+                                        borderRadius: BorderRadius.circular(11),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x386356D9),
+                                            blurRadius: 12,
+                                            offset: Offset(0, 5),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.check_rounded,
+                                            size: 18,
+                                            color: Colors.white,
+                                          ),
+                                          SizedBox(width: 5),
+                                          Flexible(
+                                            child: Text(
+                                              'Complete',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Actions Row
-                    Row(
-                      children: [
-                        // Edit button (disabled if completed)
-                        if (!isCompleted)
-                          InkWell(
-                            onTap: () async {
-                              final updated = await Navigator.push<bool>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => TaskFormScreen(
-                                    task: task,
-                                    currentUser: widget.currentUser,
-                                  ),
-                                ),
-                              );
-                              if (updated == true) {
-                                _hasModified = true;
-                                _loadTaskDetails();
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(11),
-                            child: Container(
-                              height: 42,
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                              decoration: BoxDecoration(
-                                color: AppTheme.surface,
-                                borderRadius: BorderRadius.circular(11),
-                                border: Border.all(color: const Color(0xFFDDDCE6)),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.edit_outlined, size: 17, color: AppTheme.textSoft),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Edit',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.textSoft,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                        if (!isCompleted) const SizedBox(width: 9),
-
-                        // Lifecycle Action: Start / Pause / Resume
-                        if (task.status == TaskStatus.todo)
-                          Expanded(
-                            child: InkWell(
-                              onTap: _handleStart,
-                              borderRadius: BorderRadius.circular(11),
-                              child: Container(
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surface,
-                                  borderRadius: BorderRadius.circular(11),
-                                  border: Border.all(color: const Color(0xFFDDDCE6)),
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.play_arrow_rounded, size: 18, color: AppTheme.textSoft),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Start',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.textSoft,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                        else if (task.status == TaskStatus.inProgress)
-                          Expanded(
-                            child: InkWell(
-                              onTap: _handlePause,
-                              borderRadius: BorderRadius.circular(11),
-                              child: Container(
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surface,
-                                  borderRadius: BorderRadius.circular(11),
-                                  border: Border.all(color: const Color(0xFFDDDCE6)),
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.pause_rounded, size: 18, color: AppTheme.textSoft),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Pause',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.textSoft,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                        else if (task.status == TaskStatus.paused)
-                          Expanded(
-                            child: InkWell(
-                              onTap: _handleResume,
-                              borderRadius: BorderRadius.circular(11),
-                              child: Container(
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surface,
-                                  borderRadius: BorderRadius.circular(11),
-                                  border: Border.all(color: const Color(0xFFDDDCE6)),
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.play_arrow_rounded, size: 18, color: AppTheme.textSoft),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Resume',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.textSoft,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-
-                        if (!isCompleted) const SizedBox(width: 9),
-
-                        // Complete Button (Primary)
-                        if (!isCompleted)
-                          Expanded(
-                            flex: 2,
-                            child: InkWell(
-                              onTap: _handleComplete,
-                              borderRadius: BorderRadius.circular(11),
-                              child: Container(
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primary,
-                                  borderRadius: BorderRadius.circular(11),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x386356D9),
-                                      blurRadius: 12,
-                                      offset: Offset(0, 5),
-                                    ),
-                                  ],
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.check_rounded, size: 18, color: Colors.white),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Complete',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
               ),
             ),
           ],
