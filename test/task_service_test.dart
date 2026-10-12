@@ -46,92 +46,110 @@ void main() {
     late FakeDatabaseService fakeDb;
     late TaskService taskService;
     late DateTime mockNow;
-    
+
     late DateTime baseCreatedAt;
     late DateTime baseDeadline;
 
     setUp(() {
       fakeDb = FakeDatabaseService();
-      
+
       // Start time at Jan 1, 2025
-      mockNow = DateTime(2025, 1, 1, 12, 0); 
+      mockNow = DateTime(2025, 1, 1, 12, 0);
       taskService = TaskService(databaseService: fakeDb, clock: () => mockNow);
-      
-      baseCreatedAt = mockNow; 
+
+      baseCreatedAt = mockNow;
       baseDeadline = baseCreatedAt.add(const Duration(days: 4)); // Jan 5, 12:00
     });
 
     test('T11: computeAtRiskAt formula (75%)', () {
       final expectedAtRiskAt = baseCreatedAt.add(const Duration(days: 3));
-      final actualAtRiskAt = taskService.computeAtRiskAt(baseCreatedAt, baseDeadline);
-      
+      final actualAtRiskAt = taskService.computeAtRiskAt(
+        baseCreatedAt,
+        baseDeadline,
+      );
+
       expect(actualAtRiskAt.isAtSameMomentAs(expectedAtRiskAt), isTrue);
     });
 
     test('T1: New task starts as On Track before atRiskAt', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        assignedTo: 'u1', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        assignedTo: 'u1',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
 
       // Advance clock by 1 day
-      mockNow = baseCreatedAt.add(const Duration(days: 1)); 
+      mockNow = baseCreatedAt.add(const Duration(days: 1));
       final sla = taskService.getSlaStatus(task, now: mockNow);
       expect(sla, equals(SlaStatus.onTrack));
     });
 
-    test('T2 & T3: Task becomes At Risk exactly at threshold and after', () async {
-      final task = await taskService.createTask(
-        title: 'Test', 
-        assignedTo: 'u1', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
-      );
+    test(
+      'T2 & T3: Task becomes At Risk exactly at threshold and after',
+      () async {
+        final task = await taskService.createTask(
+          title: 'Test',
+          assignedTo: 'u1',
+          priority: TaskPriority.low,
+          deadline: baseDeadline,
+        );
 
-      // Exactly at the threshold
-      mockNow = task.atRiskAt;
-      expect(taskService.getSlaStatus(task, now: mockNow), equals(SlaStatus.atRisk));
+        // Exactly at the threshold
+        mockNow = task.atRiskAt;
+        expect(
+          taskService.getSlaStatus(task, now: mockNow),
+          equals(SlaStatus.atRisk),
+        );
 
-      // Just after
-      mockNow = task.atRiskAt.add(const Duration(seconds: 1));
-      expect(taskService.getSlaStatus(task, now: mockNow), equals(SlaStatus.atRisk));
-    });
+        // Just after
+        mockNow = task.atRiskAt.add(const Duration(seconds: 1));
+        expect(
+          taskService.getSlaStatus(task, now: mockNow),
+          equals(SlaStatus.atRisk),
+        );
+      },
+    );
 
     test('T4: Task becomes Overdue past deadline', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        assignedTo: 'u1', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        assignedTo: 'u1',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
 
       mockNow = task.deadline.add(const Duration(seconds: 1));
-      expect(taskService.getSlaStatus(task, now: mockNow), equals(SlaStatus.overdue));
+      expect(
+        taskService.getSlaStatus(task, now: mockNow),
+        equals(SlaStatus.overdue),
+      );
     });
 
     test('T5: Completed task is always Completed SLA', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        assignedTo: 'u1', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        assignedTo: 'u1',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
-      
+
       await taskService.startTask(task.id);
       final completedTask = await taskService.completeTask(task.id);
 
       mockNow = task.deadline.add(const Duration(days: 10));
-      expect(taskService.getSlaStatus(completedTask, now: mockNow), equals(SlaStatus.completed));
+      expect(
+        taskService.getSlaStatus(completedTask, now: mockNow),
+        equals(SlaStatus.completed),
+      );
     });
 
     test('T6: Pause freezes SLA clock', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        assignedTo: 'u1', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        assignedTo: 'u1',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
       await taskService.startTask(task.id);
 
@@ -141,46 +159,55 @@ void main() {
 
       // Check SLA 10 days later
       mockNow = pausedTask.pausedAt!.add(const Duration(days: 10));
-      expect(taskService.getSlaStatus(pausedTask, now: mockNow), equals(SlaStatus.onTrack));
-    });
-
-    test('T7 & T8: Resume shifts deadline and handles multiple pauses', () async {
-      final task = await taskService.createTask(
-        title: 'Test', 
-        assignedTo: 'u1', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+      expect(
+        taskService.getSlaStatus(pausedTask, now: mockNow),
+        equals(SlaStatus.onTrack),
       );
-      await taskService.startTask(task.id);
-
-      // Pause exactly 1 day after creation
-      mockNow = baseCreatedAt.add(const Duration(days: 1));
-      await taskService.pauseTask(task.id);
-      
-      // Resume exactly 1 day after pause (duration = 1 day)
-      mockNow = mockNow.add(const Duration(days: 1));
-      final resumedTask = await taskService.resumeTask(task.id);
-      
-      expect(resumedTask.status, equals(TaskStatus.inProgress));
-      expect(resumedTask.pausedAt, isNull);
-      
-      // The deadline should be shifted by 1 day
-      final shift = resumedTask.deadline.difference(baseDeadline);
-      expect(shift.inDays, equals(1));
     });
+
+    test(
+      'T7 & T8: Resume shifts deadline and handles multiple pauses',
+      () async {
+        final task = await taskService.createTask(
+          title: 'Test',
+          assignedTo: 'u1',
+          priority: TaskPriority.low,
+          deadline: baseDeadline,
+        );
+        await taskService.startTask(task.id);
+
+        // Pause exactly 1 day after creation
+        mockNow = baseCreatedAt.add(const Duration(days: 1));
+        await taskService.pauseTask(task.id);
+
+        // Resume exactly 1 day after pause (duration = 1 day)
+        mockNow = mockNow.add(const Duration(days: 1));
+        final resumedTask = await taskService.resumeTask(task.id);
+
+        expect(resumedTask.status, equals(TaskStatus.inProgress));
+        expect(resumedTask.pausedAt, isNull);
+
+        // The deadline should be shifted by 1 day
+        final shift = resumedTask.deadline.difference(baseDeadline);
+        expect(shift.inDays, equals(1));
+      },
+    );
 
     test('T9: Deadline edit recalculates atRiskAt', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        assignedTo: 'u1', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        assignedTo: 'u1',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
 
       // Change deadline to 8 days total
-      final newDeadline = baseCreatedAt.add(const Duration(days: 8)); 
-      
-      final updatedTask = await taskService.updateTaskFields(task.id, deadline: newDeadline);
+      final newDeadline = baseCreatedAt.add(const Duration(days: 8));
+
+      final updatedTask = await taskService.updateTaskFields(
+        task.id,
+        deadline: newDeadline,
+      );
 
       // 75% of 8 days = 6 days
       final expectedAtRiskAt = baseCreatedAt.add(const Duration(days: 6));
@@ -189,10 +216,10 @@ void main() {
 
     test('T10: Deadline edit blocked while paused', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        assignedTo: 'u1', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        assignedTo: 'u1',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
       await taskService.startTask(task.id);
       await taskService.pauseTask(task.id);
@@ -200,7 +227,7 @@ void main() {
       // Advance time but task is paused
       mockNow = baseCreatedAt.add(const Duration(days: 5));
       final newDeadline = mockNow.add(const Duration(days: 8));
-      
+
       expect(
         () => taskService.updateTaskFields(task.id, deadline: newDeadline),
         throwsA(isA<ValidationException>()),
@@ -209,78 +236,87 @@ void main() {
 
     test('T12: Starting a paused task fails (must use resume)', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
       await taskService.startTask(task.id);
       await taskService.pauseTask(task.id);
-      
-      expect(() => taskService.startTask(task.id), throwsA(isA<TaskServiceException>()));
+
+      expect(
+        () => taskService.startTask(task.id),
+        throwsA(isA<TaskServiceException>()),
+      );
     });
 
     test('T13: Edit overdue task without changing deadline', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
-      
-      mockNow = baseDeadline.add(const Duration(days: 1)); // Now overdue
-      expect(taskService.getSlaStatus(task, now: mockNow), equals(SlaStatus.overdue));
 
-      final updatedTask = await taskService.updateTaskFields(task.id, title: 'Updated Overdue');
+      mockNow = baseDeadline.add(const Duration(days: 1)); // Now overdue
+      expect(
+        taskService.getSlaStatus(task, now: mockNow),
+        equals(SlaStatus.overdue),
+      );
+
+      final updatedTask = await taskService.updateTaskFields(
+        task.id,
+        title: 'Updated Overdue',
+      );
       expect(updatedTask.title, equals('Updated Overdue'));
     });
 
     test('T14: Reject past deadlines on creation', () async {
       final pastDeadline = mockNow.subtract(const Duration(seconds: 1));
-      
+
       expect(
         () => taskService.createTask(
-          title: 'Test', 
-          priority: TaskPriority.low, 
-          deadline: pastDeadline
+          title: 'Test',
+          priority: TaskPriority.low,
+          deadline: pastDeadline,
         ),
-        throwsA(isA<ValidationException>())
+        throwsA(isA<ValidationException>()),
       );
     });
 
     test('T15: Reject empty title on creation and update', () async {
       expect(
         () => taskService.createTask(
-          title: '   ', 
-          priority: TaskPriority.low, 
-          deadline: baseDeadline
+          title: '   ',
+          priority: TaskPriority.low,
+          deadline: baseDeadline,
         ),
-        throwsA(isA<ValidationException>())
+        throwsA(isA<ValidationException>()),
       );
 
       final task = await taskService.createTask(
-        title: 'Valid', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Valid',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
 
       expect(
         () => taskService.updateTaskFields(task.id, title: ''),
-        throwsA(isA<ValidationException>())
+        throwsA(isA<ValidationException>()),
       );
     });
 
     test('T16: Cannot edit a completed task', () async {
       final task = await taskService.createTask(
-        title: 'Test', 
-        priority: TaskPriority.low, 
-        deadline: baseDeadline
+        title: 'Test',
+        priority: TaskPriority.low,
+        deadline: baseDeadline,
       );
-      
+
       await taskService.startTask(task.id);
       await taskService.completeTask(task.id);
 
       expect(
         () => taskService.updateTaskFields(task.id, title: 'Nope'),
-        throwsA(isA<TaskServiceException>())
+        throwsA(isA<TaskServiceException>()),
       );
     });
 
@@ -306,6 +342,58 @@ void main() {
 
       // Default/fallback bars
       expect(taskService.getWorkloadBars('Unknown'), 1);
+    });
+
+    test(
+      'T18: Successful task creation and update with valid inputs',
+      () async {
+        final task = await taskService.createTask(
+          title: 'Valid New Task',
+          description: 'Detailed description',
+          assignedTo: 'u1',
+          priority: TaskPriority.low,
+          deadline: baseDeadline,
+        );
+
+        expect(task.title, equals('Valid New Task'));
+        expect(task.description, equals('Detailed description'));
+        expect(task.assignedTo, equals('u1'));
+        expect(task.priority, equals(TaskPriority.low));
+        expect(task.status, equals(TaskStatus.todo));
+
+        final updated = await taskService.updateTaskFields(
+          task.id,
+          title: 'Updated Task Name',
+          description: 'New Description',
+          priority: TaskPriority.high,
+          deadline: baseDeadline.add(const Duration(days: 2)),
+        );
+
+        expect(updated.title, equals('Updated Task Name'));
+        expect(updated.description, equals('New Description'));
+        expect(updated.priority, equals(TaskPriority.high));
+        expect(
+          updated.deadline,
+          equals(baseDeadline.add(const Duration(days: 2))),
+        );
+      },
+    );
+
+    test('T19: Reject updating deadline to the past when changed', () async {
+      final task = await taskService.createTask(
+        title: 'Deadline Test',
+        priority: TaskPriority.medium,
+        deadline: baseDeadline,
+      );
+
+      // Fast forward time
+      mockNow = baseCreatedAt.add(const Duration(days: 2));
+      final pastDate = mockNow.subtract(const Duration(hours: 1));
+
+      expect(
+        () => taskService.updateTaskFields(task.id, deadline: pastDate),
+        throwsA(isA<ValidationException>()),
+      );
     });
   });
 }
