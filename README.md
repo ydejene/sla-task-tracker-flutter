@@ -92,6 +92,7 @@ sla_task_tracker_flutter/
 │   ├── theme/
 │   │   └── app_theme.dart             # Central design tokens, color palette, card styling, visual helpers
 │   ├── widgets/
+│   │   ├── app_header.dart            # Unified screen header with navigation back button and avatar
 │   │   ├── avatar_widget.dart         # Reusable circular avatar with tone styles and initials
 │   │   ├── task_card.dart             # Reusable card with SLA indicator, priority badge, and deadline
 │   │   └── team_member_card.dart      # Reusable member row card with active task counter and "You" badge
